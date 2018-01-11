@@ -1,6 +1,11 @@
 package crux;
 
+import java.util.HashSet;
+
 public class Token {
+    public static String studentName = "Eric Wolfe";
+    public static String studentID = "76946154";
+    public static String uciNetID = "eawolfe";
 
     public static enum Kind {
         AND("and"),
@@ -65,6 +70,19 @@ public class Token {
         public boolean matchesLexeme(String lexeme) {
             return lexeme.equals(this.lexeme);
         }
+    }
+
+    //A HashSet containing all the static lexemes will make it quick for the tokenizer to know if something is a lexeme
+    private static final HashSet<String> LexemeSet = new HashSet<>();
+    static {
+        Kind[] kinds = Kind.values();
+        for(int i = 0; i < kinds.length-5; i++) {
+                LexemeSet.add(kinds[i].lexeme);
+        }
+    }
+
+    public static boolean isLexeme(String lexeme) {
+        return LexemeSet.contains(lexeme);
     }
 
     private int lineNum;
