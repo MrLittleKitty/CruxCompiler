@@ -25,13 +25,13 @@ public class Scanner implements Iterable<Token> {
         //If the nextChar is ever -1, then we reached the end of the file and there is no reason to keep reading
         if(nextChar != -1) {
             try {
-                nextChar = input.read();
-                charPos++;
-
                 if (isLineSeparator(nextChar)) {
                     lineNum++;
-                    charPos = 1;
+                    charPos = 0;
                 }
+
+                nextChar = input.read();
+                charPos++;
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -53,10 +53,6 @@ public class Scanner implements Iterable<Token> {
         if(nextChar == -1)
             return;
 
-        //Set the linenumber to the next line and the char pos to zero
-        lineNum++;
-        charPos = 0;
-
         //Read the next char (handles empty lines and such)
         readChar();
     }
@@ -68,9 +64,6 @@ public class Scanner implements Iterable<Token> {
      */
     public Token next()
     {
-        int savedLine = lineNum;
-        int saveCharPos = charPos;
-
         //Skip over whitespace until we get to the next token
         while(Character.isWhitespace((char)nextChar) || isLineSeparator(nextChar))
             readChar();
@@ -82,19 +75,19 @@ public class Scanner implements Iterable<Token> {
             if('/' ==(char)nextChar)
                 nextLine();
             else //Otherwise its only one '/' and its the division token
-                return new Token(savedLine,saveCharPos,"/");
+                return new Token(lineNum,charPos-1,"/");
         }
-
-        //If we are at the end of the file then keep returning the EOF token
-        if(nextChar == -1)
-            return Token.EOF(savedLine,saveCharPos);
 
         //Skip over whitespace until we get to the next token
         while(Character.isWhitespace((char)nextChar) || isLineSeparator(nextChar))
             readChar();
 
-        savedLine = lineNum;
-        saveCharPos = charPos;
+        int savedLine = lineNum;
+        int saveCharPos = charPos;
+
+        //If we are at the end of the file then keep returning the EOF token
+        if(nextChar == -1)
+            return Token.EOF(savedLine,saveCharPos);
 
         //If it starts with a digit then its a number
         if(Character.isDigit((char)nextChar)) {
@@ -158,7 +151,7 @@ public class Scanner implements Iterable<Token> {
     }
 
     private boolean isLineSeparator(int character) {
-        return (char)character == Character.LINE_SEPARATOR || character == 10;
+        return character == 13 || character == 10;
     }
 
     @Override

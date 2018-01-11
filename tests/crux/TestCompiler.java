@@ -22,13 +22,6 @@ public class TestCompiler {
         for(int i = 1; i <= 30; i++) {
             output.clear();
 
-            //I think the output file for 26 is wrong
-            if(i == 26)
-                continue;
-
-            if(i == 27)
-                i = 27;
-
             File in,out;
             if(i < 10) {
                 in = new File("tests/files/test0" + i + ".crx");
