@@ -118,11 +118,6 @@ public class Scanner implements Iterable<Token> {
             buffer.append((char)nextChar);
             readChar();
 
-            //If the symbol token isn't a single char lexeme or the start of a two char lexeme then its an error
-            if(!Token.isLexeme(buffer.toString())) {
-                return Token.Error(lineNum,charPos-1);
-            }
-
             //Add the second char to the buffer so we can see if its a two char lexeme
             buffer.append((char)nextChar);
 
@@ -131,10 +126,17 @@ public class Scanner implements Iterable<Token> {
                 readChar();
                 return new Token(lineNum,charPos-1,buffer.toString());
             }
-            else { //This means its a one char lexeme
+            else { //This means its a one char lexeme or an error
                 //Since we have already done the readChar() for the second char, don't do another one.
+
+                //cuts the last character off the buffer (buffer is now the one char lexeme or its an error)
+                buffer.setLength(buffer.length()-1);
+
+                //If the symbol token isn't a single char lexeme then its an error
+                if(!Token.isLexeme(buffer.toString()))
+                    return Token.Error(lineNum,charPos-1);
+
                 //Just return a token with the first char in the buffer
-                buffer.setLength(buffer.length()-1); //cuts the last character off the buffer
                 return new Token(lineNum,charPos-1,buffer.toString());
             }
         }
