@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class Compiler {
-    public static String studentName = "TODO: Your Name";
-    public static String studentID = "TODO: Your 8-digit id";
-    public static String uciNetID = "TODO: uci-net id";
+    public static String studentName = "Eric Wolfe";
+    public static String studentID = "76946154";
+    public static String uciNetID = "eawolfe";
 
     public static void main(String[] args)
     {
