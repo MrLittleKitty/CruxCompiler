@@ -99,7 +99,7 @@ public class Token {
         this.lexeme = "No Lexeme Given";
     }
 
-    public Token(String lexeme, int lineNum, int charPos)
+    public Token(int lineNum, int charPos, String lexeme)
     {
         this.lineNum = lineNum;
         this.charPos = charPos;
@@ -169,4 +169,9 @@ public class Token {
         return t;
     }
 
+    public static Token Error(int lineNum, int charPos) {
+        Token t = new Token(lineNum,charPos);
+        t.kind = Kind.ERROR;
+        return t;
+    }
 }
