@@ -139,7 +139,9 @@ public class Token {
 
     public String toString()
     {
-        return this.kind.name()+"("+this.lexeme+")(lineNum:"+this.lineNum+", charPos:"+this.charPos+")";
+        if(this.kind == Kind.IDENTIFIER || this.kind == Kind.FLOAT || this.kind == Kind.INTEGER || this.kind == Kind.ERROR)
+            return this.kind.name()+"("+this.lexeme+")(lineNum:"+this.lineNum+", charPos:"+this.charPos+")";
+        return this.kind.name()+"(lineNum:"+this.lineNum+", charPos:"+this.charPos+")";
     }
 
     public static Token Float(int lineNum, int charPos, String lexeme) {
@@ -169,9 +171,10 @@ public class Token {
         return t;
     }
 
-    public static Token Error(int lineNum, int charPos) {
+    public static Token Error(int lineNum, int charPos, String message) {
         Token t = new Token(lineNum,charPos);
         t.kind = Kind.ERROR;
+        t.lexeme = message;
         return t;
     }
 }
