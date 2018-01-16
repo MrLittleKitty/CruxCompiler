@@ -3,7 +3,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 
-public class Scanner implements Iterable<Token> {
+public class Scanner {
     public static String studentName = "Eric Wolfe";
     public static String studentID = "76946154";
     public static String uciNetID = "eawolfe";
@@ -152,23 +152,5 @@ public class Scanner implements Iterable<Token> {
 
     private boolean isLineSeparator(int character) {
         return character == 13 || character == 10;
-    }
-
-    @Override
-    public Iterator<Token> iterator() {
-        return null;
-    }
-
-    private class TokenIterator implements Iterator<Token> {
-
-        @Override
-        public boolean hasNext() {
-            return false;
-        }
-
-        @Override
-        public Token next() {
-            return null;
-        }
     }
 }

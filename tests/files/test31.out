@@ -1,0 +1,5 @@
+DIV(lineNum:1, charPos:1)
+MUL(lineNum:1, charPos:2)
+MUL(lineNum:1, charPos:3)
+DIV(lineNum:1, charPos:4)
+EOF(lineNum:2, charPos:1)

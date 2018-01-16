@@ -1,0 +1,5 @@
+IDENTIFIER(void)(lineNum:1, charPos:1)
+IDENTIFIER(bool)(lineNum:1, charPos:6)
+IDENTIFIER(int)(lineNum:1, charPos:11)
+IDENTIFIER(float)(lineNum:1, charPos:15)
+EOF(lineNum:1, charPos:20)

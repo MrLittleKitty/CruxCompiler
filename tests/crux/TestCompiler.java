@@ -19,8 +19,11 @@ public class TestCompiler {
 
         ArrayList<String> output = new ArrayList<>();
         crux.Scanner s;
-        for(int i = 1; i <= 30; i++) {
+        for(int i = 1; i <= 33; i++) {
             output.clear();
+
+            if(i == 31)
+                continue;
 
             File in,out;
             if(i < 10) {
