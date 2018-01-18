@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class TestCompiler {
+public class TestTokenizer {
 
     @Test
     public void runTestCases() {
@@ -27,12 +27,12 @@ public class TestCompiler {
 
             File in,out;
             if(i < 10) {
-                in = new File("tests/files/test0" + i + ".crx");
-                out = new File("tests/files/test0" + i + ".out");
+                in = new File("tests/tokenizer/test0" + i + ".crx");
+                out = new File("tests/tokenizer/test0" + i + ".out");
             }
             else {
-                in = new File("tests/files/test" + i + ".crx");
-                out = new File("tests/files/test" + i + ".out");
+                in = new File("tests/tokenizer/test" + i + ".crx");
+                out = new File("tests/tokenizer/test" + i + ".out");
             }
 
             try {
