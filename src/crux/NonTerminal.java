@@ -16,137 +16,161 @@ public enum NonTerminal {
     TYPE(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.IDENTIFIER);
         }}),
     LITERAL(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.INTEGER);
+            add(Token.Kind.FLOAT);
+            add(Token.Kind.TRUE);
+            add(Token.Kind.FALSE);
+
         }}),
     CALL_EXPRESSION(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.CALL);
         }}),
     OP0(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.GREATER_EQUAL);
+            add(Token.Kind.LESSER_EQUAL);
+            add(Token.Kind.NOT_EQUAL);
+            add(Token.Kind.EQUAL);
+            add(Token.Kind.GREATER_THAN);
+            add(Token.Kind.LESS_THAN);
        }}),
     OP1(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.ADD);
+            add(Token.Kind.SUB);
+            add(Token.Kind.OR);
        }}),
     OP2(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.MUL);
+            add(Token.Kind.DIV);
+            add(Token.Kind.AND);
        }}),
     EXPRESSION3(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.NOT);
+            add(Token.Kind.OPEN_PAREN);
+            addAll(DESIGNATOR.firstSet);
+            addAll(CALL_EXPRESSION.firstSet);
+            addAll(LITERAL.firstSet);
        }}),
     EXPRESSION2(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(EXPRESSION3.firstSet);
         }}),
     EXPRESSION1(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(EXPRESSION2.firstSet);
         }}),
     EXPRESSION0(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(EXPRESSION1.firstSet);
         }}),
     EXPRESSION_LIST(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(EXPRESSION0.firstSet);
         }}),
     PARAMETER(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.IDENTIFIER);
         }}),
     PARAMETER_LIST(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(PARAMETER.firstSet);
         }}),
     VARIABLE_DECLARATION(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.VAR);
         }}),
     ARRAY_DECLARATION(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.ARRAY);
         }}),
     FUNCTION_DEFINITION(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.FUNC);
         }}),
     DECLARATION(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(VARIABLE_DECLARATION.firstSet);
+            addAll(ARRAY_DECLARATION.firstSet);
+            addAll(FUNCTION_DEFINITION.firstSet);
         }}),
     DECLARATION_LIST(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(DECLARATION.firstSet);
         }}),    
     ASSIGNMENT_STATEMENT(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.LET);
         }}),
     CALL_STATEMENT(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(CALL_EXPRESSION.firstSet);
         }}),
     IF_STATEMENT(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.IF);
         }}),
     WHILE_STATEMENT(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.WHILE);
         }}),
     RETURN_STATEMENT(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.RETURN);
         }}),
     STATEMENT_BLOCK(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            add(Token.Kind.OPEN_BRACE);
         }}),
     STATEMENT(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(VARIABLE_DECLARATION.firstSet);
+            addAll(CALL_STATEMENT.firstSet);
+            addAll(ASSIGNMENT_STATEMENT.firstSet);
+            addAll(IF_STATEMENT.firstSet);
+            addAll(WHILE_STATEMENT.firstSet);
+            addAll(RETURN_STATEMENT.firstSet);
         }}),
     STATEMENT_LIST(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(STATEMENT.firstSet);
         }}),
     PROGRAM(new HashSet<Token.Kind>() {
         private static final long serialVersionUID = 1L;
         {
-            throw new RuntimeException("implement this");
+            addAll(DECLARATION_LIST.firstSet);
         }});
            
     public final HashSet<Token.Kind> firstSet = new HashSet<Token.Kind>();

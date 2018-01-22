@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Stack;
 
 public class Parser {
-    public static String studentName = "TODO: Your Name";
-    public static String studentID = "TODO: Your 8-digit id";
-    public static String uciNetID = "TODO: uci-net id";
+    public static String studentName = "Eric Wolfe";
+    public static String studentID = "76946154";
+    public static String uciNetID = "eawolfe";
     
 // Grammar Rule Reporting ==========================================
     private int parseTreeRecursionDepth = 0;
