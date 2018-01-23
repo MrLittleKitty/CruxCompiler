@@ -323,7 +323,7 @@ public class Parser {
         expect(Token.Kind.CLOSE_BRACKET);
         while(accept(Token.Kind.OPEN_BRACKET)) {
             expect(Token.Kind.INTEGER);
-            expect(Token.Kind.OPEN_BRACKET);
+            expect(Token.Kind.CLOSE_BRACKET);
         }
         expect(Token.Kind.SEMICOLON);
 
