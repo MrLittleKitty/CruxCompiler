@@ -133,6 +133,10 @@ public class Token {
         return lexeme;
     }
 
+    public Kind kind() {
+        return this.kind;
+    }
+
     public boolean is(Kind kind) {
         return this.kind.equals(kind);
     }
