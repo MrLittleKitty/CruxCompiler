@@ -17,17 +17,23 @@ public class Parser {
 
     private void initSymbolTable()
     {
-        throw new RuntimeException("implement this");
+        symbolTable = new SymbolTable(null,0);
+        symbolTable.insert("readInt");
+        symbolTable.insert("readFloat");
+        symbolTable.insert("printBool");
+        symbolTable.insert("printInt");
+        symbolTable.insert("printFloat");
+        symbolTable.insert("println");
     }
 
     private void enterScope()
     {
-        throw new RuntimeException("implement this");
+        symbolTable = new SymbolTable(symbolTable,symbolTable.getDepth()+1);;
     }
 
     private void exitScope()
     {
-        throw new RuntimeException("implement this");
+        symbolTable = symbolTable.getParentTable();
     }
 
     private Symbol tryResolveSymbol(Token ident)
@@ -45,8 +51,10 @@ public class Parser {
     private String reportResolveSymbolError(String name, int lineNum, int charPos)
     {
         String message = "ResolveSymbolError(" + lineNum + "," + charPos + ")[Could not find " + name + ".]";
-        errorBuffer.append(message + "\n");
-        errorBuffer.append(symbolTable.toString() + "\n");
+        errorBuffer.append(message);
+        errorBuffer.append("\n");
+        errorBuffer.append(symbolTable.toString());
+        errorBuffer.append("\n");
         return message;
     }
 
@@ -71,18 +79,18 @@ public class Parser {
     }
 
     public void enterRule(NonTerminal nonTerminal) {
-        String lineData = new String();
-        for (int i = 0; i < parseTreeRecursionDepth; i++) {
-            lineData += "  ";
-        }
-        lineData += nonTerminal.name();
-        //System.out.println("descending " + lineData);
-        parseTreeBuffer.append(lineData + "\n");
-        parseTreeRecursionDepth++;
+//        String lineData = new String();
+//        for (int i = 0; i < parseTreeRecursionDepth; i++) {
+//            lineData += "  ";
+//        }
+//        lineData += nonTerminal.name();
+//        //System.out.println("descending " + lineData);
+//        parseTreeBuffer.append(lineData + "\n");
+//        parseTreeRecursionDepth++;
     }
 
     private void exitRule(NonTerminal nonTerminal) {
-        parseTreeRecursionDepth--;
+//        parseTreeRecursionDepth--;
     }
 
     public String parseTreeReport() {
@@ -189,6 +197,24 @@ public class Parser {
         throw new QuitParseException(errorMessage);
     }
 
+    private Token expectRetrieve(Token.Kind kind)
+    {
+        Token tok = currentToken;
+        if (accept(kind))
+            return tok;
+        String errorMessage = reportSyntaxError(kind);
+        throw new QuitParseException(errorMessage);
+    }
+
+    private Token expectRetrieve(NonTerminal nt)
+    {
+        Token tok = currentToken;
+        if (accept(nt))
+            return tok;
+        String errorMessage = reportSyntaxError(nt);
+        throw new QuitParseException(errorMessage);
+    }
+
 // Grammar Rules =====================================================
 
     // literal := INTEGER | FLOAT | TRUE | FALSE .
@@ -202,7 +228,9 @@ public class Parser {
     public void designator() {
         enterRule(DESIGNATOR);
 
-        expect(Token.Kind.IDENTIFIER);
+        Token variable = expectRetrieve(Token.Kind.IDENTIFIER);
+        tryResolveSymbol(variable);
+
         while (accept(Token.Kind.OPEN_BRACKET)) {
             expression0();
             expect(Token.Kind.CLOSE_BRACKET);
@@ -309,7 +337,10 @@ public class Parser {
         enterRule(CALL_EXPRESSION);
 
         expect(Token.Kind.CALL);
-        expect(Token.Kind.IDENTIFIER);
+
+        Token functionName = expectRetrieve(Token.Kind.IDENTIFIER);
+        tryResolveSymbol(functionName);
+
         expect(Token.Kind.OPEN_PAREN);
         expression_list();
         expect(Token.Kind.CLOSE_PAREN);
@@ -334,7 +365,9 @@ public class Parser {
     public void parameter() {
         enterRule(PARAMETER);
 
-        expect(Token.Kind.IDENTIFIER);
+        Token parameterName = expectRetrieve(Token.Kind.IDENTIFIER);
+        tryDeclareSymbol(parameterName);
+
         expect(Token.Kind.COLON);
         type();
 
@@ -359,7 +392,10 @@ public class Parser {
         enterRule(VARIABLE_DECLARATION);
 
         expect(Token.Kind.VAR);
-        expect(Token.Kind.IDENTIFIER);
+
+        Token variableName = expectRetrieve(Token.Kind.IDENTIFIER);
+        tryDeclareSymbol(variableName);
+
         expect(Token.Kind.COLON);
         type();
         expect(Token.Kind.SEMICOLON);
@@ -372,7 +408,10 @@ public class Parser {
         enterRule(ARRAY_DECLARATION);
 
         expect(Token.Kind.ARRAY);
-        expect(Token.Kind.IDENTIFIER);
+
+        Token arrayName = expectRetrieve(Token.Kind.IDENTIFIER);
+        tryDeclareSymbol(arrayName);
+
         expect(Token.Kind.COLON);
         type();
         expect(Token.Kind.OPEN_BRACKET);
@@ -392,13 +431,25 @@ public class Parser {
         enterRule(FUNCTION_DEFINITION);
 
         expect(Token.Kind.FUNC);
-        expect(Token.Kind.IDENTIFIER);
+
+        Token functionName = expectRetrieve(Token.Kind.IDENTIFIER);
+        tryDeclareSymbol(functionName);
+
         expect(Token.Kind.OPEN_PAREN);
+
+        //The parameters are in the same scope as the function body, so we enter a new scope at the parameters
+        enterScope();
+
         parameter_list();
         expect(Token.Kind.CLOSE_PAREN);
         expect(Token.Kind.COLON);
         type();
-        statement_block();
+        //We use false because we don't want a new symbol table to be created for this scope
+        //We already have one created that will include the parameters and the function body
+        statement_block(false);
+
+        //We exit the scope after we leave the function body
+        exitScope();
 
         exitRule(FUNCTION_DEFINITION);
     }
@@ -460,10 +511,10 @@ public class Parser {
 
         expect(Token.Kind.IF);
         expression0();
-        statement_block();
+        statement_block(true);
 
         if(accept(Token.Kind.ELSE))
-            statement_block();
+            statement_block(true);
 
         exitRule(IF_STATEMENT);
     }
@@ -474,7 +525,7 @@ public class Parser {
 
         expect(Token.Kind.WHILE);
         expression0();
-        statement_block();
+        statement_block(true);
 
         exitRule(WHILE_STATEMENT);
     }
@@ -528,11 +579,19 @@ public class Parser {
     }
 
     // statement-block := "{" statement-list "}" .
-    public void statement_block() {
+    public void statement_block(boolean newSymbolTable) {
         enterRule(STATEMENT_BLOCK);
 
         expect(Token.Kind.OPEN_BRACE);
+
+        if(newSymbolTable)
+            enterScope();
+
         statement_list();
+
+        if(newSymbolTable)
+            exitScope();
+
         expect(Token.Kind.CLOSE_BRACE);
 
         exitRule(STATEMENT_BLOCK);
@@ -541,6 +600,8 @@ public class Parser {
     // program := declaration-list EOF .
     public void program() {
         enterRule(PROGRAM);
+
+        initSymbolTable();
 
         declaration_list();
         expect(Token.Kind.EOF);
