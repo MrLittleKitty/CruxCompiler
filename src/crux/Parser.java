@@ -1,6 +1,10 @@
 package crux;
 
+import ast.*;
+
 import java.time.temporal.ValueRange;
+import java.util.ArrayList;
+import java.util.List;
 
 import static crux.NonTerminal.*;
 
@@ -15,9 +19,8 @@ public class Parser {
 
     private SymbolTable symbolTable;
 
-    private void initSymbolTable()
-    {
-        symbolTable = new SymbolTable(null,0);
+    private void initSymbolTable() {
+        symbolTable = new SymbolTable(null, 0);
         symbolTable.insert("readInt");
         symbolTable.insert("readFloat");
         symbolTable.insert("printBool");
@@ -26,19 +29,17 @@ public class Parser {
         symbolTable.insert("println");
     }
 
-    private void enterScope()
-    {
-        symbolTable = new SymbolTable(symbolTable,symbolTable.getDepth()+1);;
+    private void enterScope() {
+        symbolTable = new SymbolTable(symbolTable, symbolTable.getDepth() + 1);
+        ;
     }
 
-    private void exitScope()
-    {
+    private void exitScope() {
         symbolTable = symbolTable.getParentTable();
     }
 
-    private Symbol tryResolveSymbol(Token ident)
-    {
-        assert(ident.is(Token.Kind.IDENTIFIER));
+    private Symbol tryResolveSymbol(Token ident) {
+        assert (ident.is(Token.Kind.IDENTIFIER));
         String name = ident.lexeme();
         try {
             return symbolTable.lookup(name);
@@ -48,8 +49,7 @@ public class Parser {
         }
     }
 
-    private String reportResolveSymbolError(String name, int lineNum, int charPos)
-    {
+    private String reportResolveSymbolError(String name, int lineNum, int charPos) {
         String message = "ResolveSymbolError(" + lineNum + "," + charPos + ")[Could not find " + name + ".]";
         errorBuffer.append(message);
         errorBuffer.append("\n");
@@ -58,9 +58,8 @@ public class Parser {
         return message;
     }
 
-    private Symbol tryDeclareSymbol(Token ident)
-    {
-        assert(ident.is(Token.Kind.IDENTIFIER));
+    private Symbol tryDeclareSymbol(Token ident) {
+        assert (ident.is(Token.Kind.IDENTIFIER));
         String name = ident.lexeme();
         try {
             return symbolTable.insert(name);
@@ -70,8 +69,7 @@ public class Parser {
         }
     }
 
-    private String reportDeclareSymbolError(String name, int lineNum, int charPos)
-    {
+    private String reportDeclareSymbolError(String name, int lineNum, int charPos) {
         String message = "DeclareSymbolError(" + lineNum + "," + charPos + ")[" + name + " already exists.]";
         errorBuffer.append(message + "\n");
         errorBuffer.append(symbolTable.toString() + "\n");
@@ -145,16 +143,12 @@ public class Parser {
         currentToken = scanner.next();
     }
 
-    public void parse() {
+    public Command parse() {
+        initSymbolTable();
         try {
-            program();
+            return program();
         } catch (QuitParseException q) {
-            errorBuffer.append("SyntaxError(")
-                    .append(lineNumber())
-                    .append(',')
-                    .append(charPosition())
-                    .append(')')
-                    .append("[Could not complete parsing.]");
+            return new ast.Error(lineNumber(), charPosition(), "Could not complete parsing.");
         }
     }
 
@@ -197,8 +191,7 @@ public class Parser {
         throw new QuitParseException(errorMessage);
     }
 
-    private Token expectRetrieve(Token.Kind kind)
-    {
+    private Token expectRetrieve(Token.Kind kind) {
         Token tok = currentToken;
         if (accept(kind))
             return tok;
@@ -206,8 +199,7 @@ public class Parser {
         throw new QuitParseException(errorMessage);
     }
 
-    private Token expectRetrieve(NonTerminal nt)
-    {
+    private Token expectRetrieve(NonTerminal nt) {
         Token tok = currentToken;
         if (accept(nt))
             return tok;
@@ -218,10 +210,14 @@ public class Parser {
 // Grammar Rules =====================================================
 
     // literal := INTEGER | FLOAT | TRUE | FALSE .
-    public void literal() {
+    public ast.Expression literal() {
         enterRule(LITERAL);
-        expect(LITERAL);
+
+        Token tok = expectRetrieve(LITERAL);
+        Expression expr = Command.newLiteral(tok);
+
         exitRule(LITERAL);
+        return expr;
     }
 
     // designator := IDENTIFIER { "[" expression0 "]" } .
@@ -298,7 +294,7 @@ public class Parser {
         enterRule(EXPRESSION2);
 
         expression3();
-        while(has(OP2)){
+        while (has(OP2)) {
             op2();
             expression3();
         }
@@ -314,17 +310,16 @@ public class Parser {
     public void expression3() {
         enterRule(EXPRESSION3);
 
-        if(accept(Token.Kind.NOT))
+        if (accept(Token.Kind.NOT))
             expression3();
-        else if(accept(Token.Kind.OPEN_PAREN)) {
+        else if (accept(Token.Kind.OPEN_PAREN)) {
             expression0();
             expect(Token.Kind.CLOSE_PAREN);
-        }
-        else if(has(DESIGNATOR))
+        } else if (has(DESIGNATOR))
             designator();
-        else if(has(CALL_EXPRESSION))
+        else if (has(CALL_EXPRESSION))
             call_expression();
-        else if(has(LITERAL))
+        else if (has(LITERAL))
             literal();
         else
             throw new QuitParseException(reportSyntaxError(EXPRESSION3));
@@ -333,7 +328,7 @@ public class Parser {
     }
 
     // call-expression := "::" IDENTIFIER "(" expression-list ")" .
-    public void call_expression() {
+    public Call call_expression() {
         enterRule(CALL_EXPRESSION);
 
         expect(Token.Kind.CALL);
@@ -352,9 +347,9 @@ public class Parser {
     public void expression_list() {
         enterRule(EXPRESSION_LIST);
 
-        if(has(EXPRESSION0)) {
+        if (has(EXPRESSION0)) {
             expression0();
-            while(accept(Token.Kind.COMMA))
+            while (accept(Token.Kind.COMMA))
                 expression0();
         }
 
@@ -362,124 +357,141 @@ public class Parser {
     }
 
     // parameter := IDENTIFIER ":" type .
-    public void parameter() {
+    public Symbol parameter() {
         enterRule(PARAMETER);
 
         Token parameterName = expectRetrieve(Token.Kind.IDENTIFIER);
-        tryDeclareSymbol(parameterName);
+        Symbol parameter = tryDeclareSymbol(parameterName);
 
         expect(Token.Kind.COLON);
         type();
 
         exitRule(PARAMETER);
+        return parameter;
     }
 
     // parameter-list := [ parameter { "," parameter } ] .
-    public void parameter_list() {
+    public List<Symbol> parameter_list() {
         enterRule(PARAMETER_LIST);
 
-        if(has(PARAMETER)) {
-            parameter();
-            while(accept(Token.Kind.COMMA))
-                parameter();
+        List<Symbol> parameters = new ArrayList<>();
+        if (has(PARAMETER)) {
+            parameters.add(parameter());
+            while (accept(Token.Kind.COMMA))
+                parameters.add(parameter());
         }
 
         exitRule(PARAMETER_LIST);
+        return parameters;
     }
 
     // variable-declaration := "var" IDENTIFIER ":" type ";" .
-    public void variable_declaration() {
+    public VariableDeclaration variable_declaration() {
         enterRule(VARIABLE_DECLARATION);
 
+        int lineNumber = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
         expect(Token.Kind.VAR);
 
         Token variableName = expectRetrieve(Token.Kind.IDENTIFIER);
-        tryDeclareSymbol(variableName);
+        Symbol symbol = tryDeclareSymbol(variableName);
 
         expect(Token.Kind.COLON);
         type();
         expect(Token.Kind.SEMICOLON);
 
         exitRule(VARIABLE_DECLARATION);
+        return new VariableDeclaration(lineNumber, charPos, symbol);
     }
 
     // array-declaration := "array" IDENTIFIER ":" type "[" INTEGER "]" { "[" INTEGER "]" } ";" .
-    public void array_declaration() {
+    public ArrayDeclaration array_declaration() {
         enterRule(ARRAY_DECLARATION);
 
+        int lineNumer = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
         expect(Token.Kind.ARRAY);
 
         Token arrayName = expectRetrieve(Token.Kind.IDENTIFIER);
-        tryDeclareSymbol(arrayName);
+        Symbol symbol = tryDeclareSymbol(arrayName);
 
         expect(Token.Kind.COLON);
         type();
         expect(Token.Kind.OPEN_BRACKET);
         expect(Token.Kind.INTEGER);
         expect(Token.Kind.CLOSE_BRACKET);
-        while(accept(Token.Kind.OPEN_BRACKET)) {
+        while (accept(Token.Kind.OPEN_BRACKET)) {
             expect(Token.Kind.INTEGER);
             expect(Token.Kind.CLOSE_BRACKET);
         }
         expect(Token.Kind.SEMICOLON);
 
         exitRule(ARRAY_DECLARATION);
+        return new ArrayDeclaration(lineNumer, charPos, symbol);
     }
 
     // function-definition := "func" IDENTIFIER "(" parameter-list ")" ":" type statement-block .
-    public void function_definition() {
+    public FunctionDefinition function_definition() {
         enterRule(FUNCTION_DEFINITION);
 
+        int lineNumber = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
         expect(Token.Kind.FUNC);
 
-        Token functionName = expectRetrieve(Token.Kind.IDENTIFIER);
-        tryDeclareSymbol(functionName);
+        Token functionNameToken = expectRetrieve(Token.Kind.IDENTIFIER);
+        Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken);
 
         expect(Token.Kind.OPEN_PAREN);
 
         //The parameters are in the same scope as the function body, so we enter a new scope at the parameters
         enterScope();
 
-        parameter_list();
+        List<Symbol> parameterSymbols = parameter_list();
         expect(Token.Kind.CLOSE_PAREN);
         expect(Token.Kind.COLON);
         type();
         //We use false because we don't want a new symbol table to be created for this scope
         //We already have one created that will include the parameters and the function body
-        statement_block(false);
+        StatementList statementBody = statement_block(false);
 
         //We exit the scope after we leave the function body
         exitScope();
 
         exitRule(FUNCTION_DEFINITION);
+        return new FunctionDefinition(lineNumber, charPos, functionNameSymbol, parameterSymbols, statementBody);
     }
 
     // declaration := variable-declaration
     //        | array-declaration
     //        | function-definition .
-    public void declaration() {
+    public Declaration declaration() {
         enterRule(DECLARATION);
 
-        if(has(VARIABLE_DECLARATION))
-            variable_declaration();
-        else if(has(ARRAY_DECLARATION))
-            array_declaration();
-        else if(has(FUNCTION_DEFINITION))
-            function_definition();
+        Declaration declaration;
+
+        if (has(VARIABLE_DECLARATION))
+            declaration = variable_declaration();
+        else if (has(ARRAY_DECLARATION))
+            declaration = array_declaration();
+        else if (has(FUNCTION_DEFINITION))
+            declaration = function_definition();
         else
             throw new QuitParseException(reportSyntaxError(DECLARATION));
 
         exitRule(DECLARATION);
+        return declaration;
     }
 
     // declaration-list := { declaration } .
-    public void declaration_list() {
+    public DeclarationList declaration_list() {
         enterRule(DECLARATION_LIST);
 
-        while(has(DECLARATION))
-            declaration();
+        DeclarationList list = new DeclarationList(currentToken.lineNumber(), currentToken.charPosition());
+        while (has(DECLARATION))
+            list.add(declaration());
 
         exitRule(DECLARATION_LIST);
+        return list;
     }
 
     // assignment-statement := "let" designator "=" expression0 ";" .
@@ -496,13 +508,14 @@ public class Parser {
     }
 
     // call-statement := call-expression ";" .
-    public void call_statement() {
+    public Call call_statement() {
         enterRule(CALL_STATEMENT);
 
-        call_expression();
+        Call call = call_expression();
         expect(Token.Kind.SEMICOLON);
 
         exitRule(CALL_STATEMENT);
+        return call;
     }
 
     // if-statement := "if" expression0 statement-block [ "else" statement-block ] .
@@ -513,7 +526,7 @@ public class Parser {
         expression0();
         statement_block(true);
 
-        if(accept(Token.Kind.ELSE))
+        if (accept(Token.Kind.ELSE))
             statement_block(true);
 
         exitRule(IF_STATEMENT);
@@ -547,66 +560,71 @@ public class Parser {
     //      | if-statement
     //      | while-statement
     //      | return-statement .
-    public void statement() {
+    public Statement statement() {
         enterRule(STATEMENT);
 
-        if(has(VARIABLE_DECLARATION))
-            variable_declaration();
-        else if(has(CALL_STATEMENT))
-            call_statement();
-        else if(has(ASSIGNMENT_STATEMENT))
-            assignment_statement();
-        else if(has(IF_STATEMENT))
-            if_statement();
-        else if(has(WHILE_STATEMENT))
-            while_statement();
-        else if(has(RETURN_STATEMENT))
-            return_statement();
+        Statement statement;
+        if (has(VARIABLE_DECLARATION))
+            statement = variable_declaration();
+        else if (has(CALL_STATEMENT))
+            statement = call_statement();
+        else if (has(ASSIGNMENT_STATEMENT))
+            statement = assignment_statement();
+        else if (has(IF_STATEMENT))
+            statement = if_statement();
+        else if (has(WHILE_STATEMENT))
+            statement = while_statement();
+        else if (has(RETURN_STATEMENT))
+            statement = return_statement();
         else
             throw new QuitParseException(reportSyntaxError(STATEMENT));
 
         exitRule(STATEMENT);
+        return statement;
     }
 
     // statement-list := { statement } .
-    public void statement_list() {
+    public StatementList statement_list() {
         enterRule(STATEMENT_LIST);
 
-        while(has(STATEMENT))
-            statement();
+        StatementList list = new StatementList(currentToken.lineNumber(),currentToken.charPosition());
+
+        while (has(STATEMENT))
+            list.add(statement());
 
         exitRule(STATEMENT_LIST);
+        return list;
     }
 
     // statement-block := "{" statement-list "}" .
-    public void statement_block(boolean newSymbolTable) {
+    public StatementList statement_block(boolean newSymbolTable) {
         enterRule(STATEMENT_BLOCK);
 
         expect(Token.Kind.OPEN_BRACE);
 
-        if(newSymbolTable)
+        if (newSymbolTable)
             enterScope();
 
-        statement_list();
+        StatementList statements = statement_list();
 
-        if(newSymbolTable)
+        if (newSymbolTable)
             exitScope();
 
         expect(Token.Kind.CLOSE_BRACE);
 
         exitRule(STATEMENT_BLOCK);
+        return statements;
     }
 
     // program := declaration-list EOF .
-    public void program() {
+    public Command program() {
         enterRule(PROGRAM);
 
-        initSymbolTable();
-
-        declaration_list();
+        DeclarationList list = declaration_list();
         expect(Token.Kind.EOF);
 
         exitRule(PROGRAM);
+        return list;
     }
 
 }
