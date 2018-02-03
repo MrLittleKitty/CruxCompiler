@@ -1,6 +1,7 @@
 package crux;
 
 import ast.*;
+import ast.Error;
 
 import java.time.temporal.ValueRange;
 import java.util.ArrayList;
@@ -221,18 +222,24 @@ public class Parser {
     }
 
     // designator := IDENTIFIER { "[" expression0 "]" } .
-    public void designator() {
+    public Expression designator() {
         enterRule(DESIGNATOR);
 
-        Token variable = expectRetrieve(Token.Kind.IDENTIFIER);
-        tryResolveSymbol(variable);
+        Token variableToken = expectRetrieve(Token.Kind.IDENTIFIER);
+        Symbol variableSymbol = tryResolveSymbol(variableToken);
+        Expression returnVal = new AddressOf(variableToken.lineNumber(),variableToken.charPosition(),variableSymbol);
 
         while (accept(Token.Kind.OPEN_BRACKET)) {
-            expression0();
+            int lineNum = currentToken.lineNumber();
+            int charPos = currentToken.charPosition();
+
+            Expression index = expression0();
             expect(Token.Kind.CLOSE_BRACKET);
+            returnVal = new Index(lineNum,charPos,returnVal,index);
         }
 
         exitRule(DESIGNATOR);
+        return returnVal;
     }
 
     // type := IDENTIFIER .
@@ -243,63 +250,75 @@ public class Parser {
     }
 
     // op0 := ">=" | "<=" | "!=" | "==" | ">" | "<" .
-    public void op0() {
+    public Token op0() {
         enterRule(OP0);
-        expect(OP0);
+        Token op = expectRetrieve(OP0);
         exitRule(OP0);
+        return op;
     }
 
     // op1 := "+" | "-" | "or" .
-    public void op1() {
+    public Token op1() {
         enterRule(OP1);
-        expect(OP1);
+        Token op = expectRetrieve(OP1);
         exitRule(OP1);
+        return op;
     }
 
     // op2 := "*" | "/" | "and" .
-    public void op2() {
+    public Token op2() {
         enterRule(OP2);
-        expect(OP2);
+        Token op = expectRetrieve(OP2);
         exitRule(OP2);
+        return op;
     }
 
     // expression0 := expression1 [ op0 expression1 ] .
-    public void expression0() {
+    public Expression expression0() {
         enterRule(EXPRESSION0);
 
-        expression1();
+        Expression returnValue = expression1();
         if (has(OP0)) {
-            op0();
-            expression1();
+            Token comparisonOperator = op0();
+            Expression rightSide = expression1();
+
+            returnValue = Command.newExpression(returnValue,comparisonOperator,rightSide);
         }
 
         exitRule(EXPRESSION0);
+        return returnValue;
     }
 
     // expression1 := expression2 { op1  expression2 } .
-    public void expression1() {
+    public Expression expression1() {
         enterRule(EXPRESSION1);
 
-        expression2();
+        Expression returnValue = expression2();
         while (has(OP1)) {
-            op1();
-            expression2();
+            Token token = op1();
+            Expression rightSide = expression2();
+
+            returnValue = Command.newExpression(returnValue,token,rightSide);
         }
 
         exitRule(EXPRESSION1);
+        return returnValue;
     }
 
     // expression2 := expression3 { op2 expression3 } .
-    public void expression2() {
+    public Expression expression2() {
         enterRule(EXPRESSION2);
 
-        expression3();
+        Expression returnValue = expression3();
         while (has(OP2)) {
-            op2();
-            expression3();
+            Token operator = op2();
+            Expression rightSide = expression3();
+
+            returnValue = Command.newExpression(returnValue,operator,rightSide);
         }
 
         exitRule(EXPRESSION2);
+        return returnValue;
     }
 
     // expression3 := "not" expression3
@@ -307,53 +326,63 @@ public class Parser {
     //       | designator
     //       | call-expression
     //       | literal .
-    public void expression3() {
+    public Expression expression3() {
         enterRule(EXPRESSION3);
 
-        if (accept(Token.Kind.NOT))
-            expression3();
-        else if (accept(Token.Kind.OPEN_PAREN)) {
-            expression0();
+        int lineNum = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
+        Expression returnExpression;
+        if (accept(Token.Kind.NOT)) {
+            Expression expression = expression3();
+            returnExpression = new LogicalNot(lineNum, charPos, expression);
+        } else if (accept(Token.Kind.OPEN_PAREN)) {
+            returnExpression = expression0();
             expect(Token.Kind.CLOSE_PAREN);
         } else if (has(DESIGNATOR))
-            designator();
+            returnExpression = new Dereference(lineNum,charPos,designator());
         else if (has(CALL_EXPRESSION))
-            call_expression();
+            returnExpression = call_expression();
         else if (has(LITERAL))
-            literal();
+            returnExpression = literal();
         else
             throw new QuitParseException(reportSyntaxError(EXPRESSION3));
 
         exitRule(EXPRESSION3);
+        return returnExpression;
     }
 
     // call-expression := "::" IDENTIFIER "(" expression-list ")" .
     public Call call_expression() {
         enterRule(CALL_EXPRESSION);
 
+        int lineNum = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
         expect(Token.Kind.CALL);
 
-        Token functionName = expectRetrieve(Token.Kind.IDENTIFIER);
-        tryResolveSymbol(functionName);
+        Token functionNameToken = expectRetrieve(Token.Kind.IDENTIFIER);
+        Symbol functionNameSymbol = tryResolveSymbol(functionNameToken);
 
         expect(Token.Kind.OPEN_PAREN);
-        expression_list();
+        ExpressionList list = expression_list();
         expect(Token.Kind.CLOSE_PAREN);
 
         exitRule(CALL_EXPRESSION);
+        return new Call(lineNum, charPos, functionNameSymbol, list);
     }
 
     // expression-list := [ expression0 { "," expression0 } ] .
-    public void expression_list() {
+    public ExpressionList expression_list() {
         enterRule(EXPRESSION_LIST);
 
+        ExpressionList list = new ExpressionList(currentToken.lineNumber(), currentToken.charPosition());
         if (has(EXPRESSION0)) {
-            expression0();
+            list.add(expression0());
             while (accept(Token.Kind.COMMA))
-                expression0();
+                list.add(expression0());
         }
 
         exitRule(EXPRESSION_LIST);
+        return list;
     }
 
     // parameter := IDENTIFIER ":" type .
@@ -495,16 +524,20 @@ public class Parser {
     }
 
     // assignment-statement := "let" designator "=" expression0 ";" .
-    public void assignment_statement() {
+    public Assignment assignment_statement() {
         enterRule(ASSIGNMENT_STATEMENT);
 
+        int lineNum = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
+
         expect(Token.Kind.LET);
-        designator();
+        Expression target = designator();
         expect(Token.Kind.ASSIGN);
-        expression0();
+        Expression newValue = expression0();
         expect(Token.Kind.SEMICOLON);
 
         exitRule(ASSIGNMENT_STATEMENT);
+        return new Assignment(lineNum, charPos, target, newValue);
     }
 
     // call-statement := call-expression ";" .
@@ -519,39 +552,52 @@ public class Parser {
     }
 
     // if-statement := "if" expression0 statement-block [ "else" statement-block ] .
-    public void if_statement() {
+    public IfElseBranch if_statement() {
         enterRule(IF_STATEMENT);
 
+        int lineNum = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
+
         expect(Token.Kind.IF);
-        expression0();
-        statement_block(true);
+        Expression conditional = expression0();
+        StatementList statementBlock = statement_block(true);
+        StatementList elseBlock = new StatementList(currentToken.lineNumber(),currentToken.charPosition());
 
         if (accept(Token.Kind.ELSE))
-            statement_block(true);
+            elseBlock = statement_block(true);
 
         exitRule(IF_STATEMENT);
+        return new IfElseBranch(lineNum, charPos, conditional, statementBlock, elseBlock);
     }
 
     // while-statement := "while" expression0 statement-block .
-    public void while_statement() {
+    public WhileLoop while_statement() {
         enterRule(WHILE_STATEMENT);
 
+        int lineNum = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
+
         expect(Token.Kind.WHILE);
-        expression0();
-        statement_block(true);
+        Expression conditional = expression0();
+        StatementList whileBlock = statement_block(true);
 
         exitRule(WHILE_STATEMENT);
+        return new WhileLoop(lineNum, charPos, conditional, whileBlock);
     }
 
     // return-statement := "return" expression0 ";" .
-    public void return_statement() {
+    public Return return_statement() {
         enterRule(RETURN_STATEMENT);
 
+        int lineNum = currentToken.lineNumber();
+        int charPos = currentToken.charPosition();
+
         expect(Token.Kind.RETURN);
-        expression0();
+        Expression expression = expression0();
         expect(Token.Kind.SEMICOLON);
 
         exitRule(RETURN_STATEMENT);
+        return new Return(lineNum, charPos, expression);
     }
 
     // statement := variable-declaration
@@ -587,7 +633,7 @@ public class Parser {
     public StatementList statement_list() {
         enterRule(STATEMENT_LIST);
 
-        StatementList list = new StatementList(currentToken.lineNumber(),currentToken.charPosition());
+        StatementList list = new StatementList(currentToken.lineNumber(), currentToken.charPosition());
 
         while (has(STATEMENT))
             list.add(statement());
