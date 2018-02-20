@@ -1,5 +1,7 @@
 package crux;
 
+import types.Type;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -28,9 +30,9 @@ public class SymbolTable {
         throw new SymbolNotFoundError(name);
     }
 
-    public Symbol insert(String name) throws RedeclarationError {
+    public Symbol insert(String name, Type type) throws RedeclarationError {
 
-        Symbol symbol = new Symbol(name);
+        Symbol symbol = new Symbol(name, type);
 
         if (symbolTable.containsKey(name))
             throw new RedeclarationError(symbol);

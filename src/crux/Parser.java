@@ -2,7 +2,10 @@ package crux;
 
 import ast.*;
 import ast.Error;
+import types.FloatType;
+import types.IntType;
 import types.Type;
+import types.VoidType;
 
 import java.time.temporal.ValueRange;
 import java.util.ArrayList;
@@ -23,12 +26,12 @@ public class Parser {
 
     private void initSymbolTable() {
         symbolTable = new SymbolTable(null, 0);
-        symbolTable.insert("readInt");
-        symbolTable.insert("readFloat");
-        symbolTable.insert("printBool");
-        symbolTable.insert("printInt");
-        symbolTable.insert("printFloat");
-        symbolTable.insert("println");
+        symbolTable.insert("readInt", new IntType());
+        symbolTable.insert("readFloat", new FloatType());
+        symbolTable.insert("printBool", new VoidType());
+        symbolTable.insert("printInt", new VoidType());
+        symbolTable.insert("printFloat", new VoidType());
+        symbolTable.insert("println", new VoidType());
     }
 
     private void enterScope() {
@@ -59,11 +62,11 @@ public class Parser {
         return message;
     }
 
-    private Symbol tryDeclareSymbol(Token ident) {
+    private Symbol tryDeclareSymbol(Token ident, Type type) {
         assert (ident.is(Token.Kind.IDENTIFIER));
         String name = ident.lexeme();
         try {
-            return symbolTable.insert(name);
+            return symbolTable.insert(name, type);
         } catch (RedeclarationError re) {
             String message = reportDeclareSymbolError(name, ident.lineNumber(), ident.charPosition());
             return new ErrorSymbol(message);
@@ -247,10 +250,14 @@ public class Parser {
     }
 
     // type := IDENTIFIER .
-    public void type() {
+    public Type type() {
         enterRule(TYPE);
-        expect(Token.Kind.IDENTIFIER);
+
+        Token typeToken = expectRetrieve(Token.Kind.IDENTIFIER);
+        Type type = tryResolveType(typeToken.lexeme());
+
         exitRule(TYPE);
+        return type;
     }
 
     // op0 := ">=" | "<=" | "!=" | "==" | ">" | "<" .
@@ -394,10 +401,10 @@ public class Parser {
         enterRule(PARAMETER);
 
         Token parameterName = expectRetrieve(Token.Kind.IDENTIFIER);
-        Symbol parameter = tryDeclareSymbol(parameterName);
-
         expect(Token.Kind.COLON);
-        type();
+        Type type = type();
+
+        Symbol parameter = tryDeclareSymbol(parameterName, type);
 
         exitRule(PARAMETER);
         return parameter;
@@ -427,10 +434,10 @@ public class Parser {
         expect(Token.Kind.VAR);
 
         Token variableName = expectRetrieve(Token.Kind.IDENTIFIER);
-        Symbol symbol = tryDeclareSymbol(variableName);
 
         expect(Token.Kind.COLON);
-        type();
+        Type type = type();
+        Symbol symbol = tryDeclareSymbol(variableName, type);
         expect(Token.Kind.SEMICOLON);
 
         exitRule(VARIABLE_DECLARATION);
@@ -446,10 +453,10 @@ public class Parser {
         expect(Token.Kind.ARRAY);
 
         Token arrayName = expectRetrieve(Token.Kind.IDENTIFIER);
-        Symbol symbol = tryDeclareSymbol(arrayName);
 
         expect(Token.Kind.COLON);
-        type();
+        Type type = type();
+        Symbol symbol = tryDeclareSymbol(arrayName, type);
         expect(Token.Kind.OPEN_BRACKET);
         expect(Token.Kind.INTEGER);
         expect(Token.Kind.CLOSE_BRACKET);
@@ -472,7 +479,6 @@ public class Parser {
         expect(Token.Kind.FUNC);
 
         Token functionNameToken = expectRetrieve(Token.Kind.IDENTIFIER);
-        Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken);
 
         expect(Token.Kind.OPEN_PAREN);
 
@@ -482,7 +488,8 @@ public class Parser {
         List<Symbol> parameterSymbols = parameter_list();
         expect(Token.Kind.CLOSE_PAREN);
         expect(Token.Kind.COLON);
-        type();
+        Type type = type();
+        Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken, type);
         //We use false because we don't want a new symbol table to be created for this scope
         //We already have one created that will include the parameters and the function body
         StatementList statementBody = statement_block(false);

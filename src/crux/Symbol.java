@@ -8,7 +8,13 @@ public class Symbol {
     private String name;
     private Type type;
 
-    public Symbol(String name) {
+    public Symbol(String name, Type type) {
+        this.name = name;
+//        this.type = new ErrorType("Type not set.");
+        this.type = type;
+    }
+
+    protected Symbol(String name) {
         this.name = name;
         this.type = new ErrorType("Type not set.");
     }

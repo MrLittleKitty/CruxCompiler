@@ -22,10 +22,10 @@ public class ArrayType extends Type {
         return base;
     }
     
-    @override
-    public string tostring()
+    @Override
+    public String toString()
     {
-        return "array[" + extent "," + base + "]";
+        return "array[" + extent + "," + base + "]";
     }
     
     @Override
