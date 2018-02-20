@@ -1,23 +1,23 @@
 package types;
 
 public class AddressType extends Type {
-    
+
     private Type base;
-    
-    public AddressType(Type base)
-    {
-        throw new RuntimeException("implement operators");
+
+    public AddressType(Type base) {
         this.base = base;
     }
-    
-    public Type base()
-    {
+
+    public Type base() {
+        return base;
+    }
+
+    public Type deref() {
         return base;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "Address(" + base + ")";
     }
 
@@ -27,8 +27,8 @@ public class AddressType extends Type {
             return false;
         if (!(that instanceof AddressType))
             return false;
-        
-        AddressType aType = (AddressType)that;
+
+        AddressType aType = (AddressType) that;
         return this.base.equivalent(aType.base);
     }
 }

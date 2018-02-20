@@ -184,6 +184,7 @@ public class TypeChecker implements CommandVisitor {
 
     @Override
     public void visit(WhileLoop node) {
+
         throw new RuntimeException("Implement this");
     }
 
