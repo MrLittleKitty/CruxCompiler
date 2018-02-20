@@ -2,6 +2,7 @@ package crux;
 
 import ast.*;
 import ast.Error;
+import types.Type;
 
 import java.time.temporal.ValueRange;
 import java.util.ArrayList;
@@ -32,7 +33,6 @@ public class Parser {
 
     private void enterScope() {
         symbolTable = new SymbolTable(symbolTable, symbolTable.getDepth() + 1);
-        ;
     }
 
     private void exitScope() {
@@ -90,6 +90,10 @@ public class Parser {
 
     private void exitRule(NonTerminal nonTerminal) {
 //        parseTreeRecursionDepth--;
+    }
+
+    private Type tryResolveType(String typeStr) {
+        return Type.getBaseType(typeStr);
     }
 
     public String parseTreeReport() {
@@ -227,7 +231,7 @@ public class Parser {
 
         Token variableToken = expectRetrieve(Token.Kind.IDENTIFIER);
         Symbol variableSymbol = tryResolveSymbol(variableToken);
-        Expression returnVal = new AddressOf(variableToken.lineNumber(),variableToken.charPosition(),variableSymbol);
+        Expression returnVal = new AddressOf(variableToken.lineNumber(), variableToken.charPosition(), variableSymbol);
 
         while (accept(Token.Kind.OPEN_BRACKET)) {
             int lineNum = currentToken.lineNumber();
@@ -235,7 +239,7 @@ public class Parser {
 
             Expression index = expression0();
             expect(Token.Kind.CLOSE_BRACKET);
-            returnVal = new Index(lineNum,charPos,returnVal,index);
+            returnVal = new Index(lineNum, charPos, returnVal, index);
         }
 
         exitRule(DESIGNATOR);
@@ -282,7 +286,7 @@ public class Parser {
             Token comparisonOperator = op0();
             Expression rightSide = expression1();
 
-            returnValue = Command.newExpression(returnValue,comparisonOperator,rightSide);
+            returnValue = Command.newExpression(returnValue, comparisonOperator, rightSide);
         }
 
         exitRule(EXPRESSION0);
@@ -298,7 +302,7 @@ public class Parser {
             Token token = op1();
             Expression rightSide = expression2();
 
-            returnValue = Command.newExpression(returnValue,token,rightSide);
+            returnValue = Command.newExpression(returnValue, token, rightSide);
         }
 
         exitRule(EXPRESSION1);
@@ -314,7 +318,7 @@ public class Parser {
             Token operator = op2();
             Expression rightSide = expression3();
 
-            returnValue = Command.newExpression(returnValue,operator,rightSide);
+            returnValue = Command.newExpression(returnValue, operator, rightSide);
         }
 
         exitRule(EXPRESSION2);
@@ -339,7 +343,7 @@ public class Parser {
             returnExpression = expression0();
             expect(Token.Kind.CLOSE_PAREN);
         } else if (has(DESIGNATOR))
-            returnExpression = new Dereference(lineNum,charPos,designator());
+            returnExpression = new Dereference(lineNum, charPos, designator());
         else if (has(CALL_EXPRESSION))
             returnExpression = call_expression();
         else if (has(LITERAL))
@@ -561,7 +565,7 @@ public class Parser {
         expect(Token.Kind.IF);
         Expression conditional = expression0();
         StatementList statementBlock = statement_block(true);
-        StatementList elseBlock = new StatementList(currentToken.lineNumber(),currentToken.charPosition());
+        StatementList elseBlock = new StatementList(currentToken.lineNumber(), currentToken.charPosition());
 
         if (accept(Token.Kind.ELSE))
             elseBlock = statement_block(true);
