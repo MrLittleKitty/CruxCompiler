@@ -2,10 +2,7 @@ package crux;
 
 import ast.*;
 import ast.Error;
-import types.FloatType;
-import types.IntType;
-import types.Type;
-import types.VoidType;
+import types.*;
 
 import java.time.temporal.ValueRange;
 import java.util.ArrayList;
@@ -40,6 +37,14 @@ public class Parser {
 
     private void exitScope() {
         symbolTable = symbolTable.getParentTable();
+    }
+
+    private TypeList buildTypeList(List<Symbol> parameters) {
+        TypeList list = new TypeList();
+        for(Symbol symbol : parameters) {
+            list.append(symbol.type());
+        }
+        return list;
     }
 
     private Symbol tryResolveSymbol(Token ident) {
@@ -456,15 +461,19 @@ public class Parser {
 
         expect(Token.Kind.COLON);
         Type type = type();
-        Symbol symbol = tryDeclareSymbol(arrayName, type);
         expect(Token.Kind.OPEN_BRACKET);
         expect(Token.Kind.INTEGER);
         expect(Token.Kind.CLOSE_BRACKET);
+        int extent = 1;
         while (accept(Token.Kind.OPEN_BRACKET)) {
             expect(Token.Kind.INTEGER);
             expect(Token.Kind.CLOSE_BRACKET);
+            extent++;
         }
         expect(Token.Kind.SEMICOLON);
+
+        ArrayType arrayType = new ArrayType(extent,type);
+        Symbol symbol = tryDeclareSymbol(arrayName, arrayType);
 
         exitRule(ARRAY_DECLARATION);
         return new ArrayDeclaration(lineNumer, charPos, symbol);
@@ -489,7 +498,8 @@ public class Parser {
         expect(Token.Kind.CLOSE_PAREN);
         expect(Token.Kind.COLON);
         Type type = type();
-        Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken, type);
+        FuncType functionType = new FuncType(buildTypeList(parameterSymbols),type);
+        Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken, functionType);
         //We use false because we don't want a new symbol table to be created for this scope
         //We already have one created that will include the parameters and the function body
         StatementList statementBody = statement_block(false);
