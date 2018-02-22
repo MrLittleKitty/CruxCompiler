@@ -88,31 +88,31 @@ public class TypeChecker implements CommandVisitor {
 
     @Override
     public void visit(AddressOf node) {
-        throw new RuntimeException("Implement this");
+        put(node, new AddressType(node.symbol().type()));
     }
 
     @Override
     public void visit(LiteralBool node) {
-        throw new RuntimeException("Implement this");
+        put(node, new BoolType());
     }
 
     @Override
     public void visit(LiteralFloat node) {
-        throw new RuntimeException("Implement this");
+        put(node, new FloatType());
     }
 
     @Override
     public void visit(LiteralInt node) {
-        throw new RuntimeException("Implement this");
+        put(node, new IntType());
     }
 
     @Override
     public void visit(VariableDeclaration node) {
         Type type = node.symbol().type();
         if (type.equivalent(INT) || type.equivalent(BOOL) || type.equivalent(FLOAT))
-            typeMap.put(node, node.symbol().type());
+            put(node, node.symbol().type());
         else
-            typeMap.put(node, new ErrorType("Variable " + node.symbol().name() + " has invalid type "
+            put(node, new ErrorType("Variable " + node.symbol().name() + " has invalid type "
                     + type.toString() + "."));
     }
 
@@ -126,9 +126,9 @@ public class TypeChecker implements CommandVisitor {
                 type = t.base();
                 continue;
             } else if (type.equivalent(INT) || type.equivalent(BOOL) || type.equivalent(FLOAT))
-                typeMap.put(node, node.symbol().type());
+                put(node, node.symbol().type());
             else
-                typeMap.put(node, new ErrorType("Array " + node.symbol().name() + " has invalid base type "
+                put(node, new ErrorType("Array " + node.symbol().name() + " has invalid base type "
                         + type.toString() + "."));
             break;
         }
@@ -143,9 +143,9 @@ public class TypeChecker implements CommandVisitor {
         //If its the main function then check that is matches the correct signature
         if (node.function().name().equals("main")) {
             if (!returnType.equivalent(VOID) || !new TypeList().equivalent(parameterTypeList))
-                typeMap.put(node, new ErrorType("Function main has invalid signature."));
+                put(node, new ErrorType("Function main has invalid signature."));
             else
-                typeMap.put(node, node.function().type());
+                put(node, node.function().type());
         } else {
             //Otherwise make sure that there are no type errors in its parameters
             Type finalType = functionType;
@@ -162,56 +162,74 @@ public class TypeChecker implements CommandVisitor {
                 }
                 position++;
             }
-            typeMap.put(node, finalType);
+            put(node, finalType);
         }
 
         //Now we need to check the body of the function for errors like wrong return type, no returned value, etc.
         node.body().accept(this);
+
+
     }
 
     @Override
     public void visit(Comparison node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.leftSide());
+        Type right = visitAndGetType(node.rightSide());
+        put(node, left.compare(right));
     }
 
     @Override
     public void visit(Addition node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.leftSide());
+        Type right = visitAndGetType(node.rightSide());
+        put(node, left.add(right));
     }
 
     @Override
     public void visit(Subtraction node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.leftSide());
+        Type right = visitAndGetType(node.rightSide());
+        put(node, left.sub(right));
     }
 
     @Override
     public void visit(Multiplication node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.leftSide());
+        Type right = visitAndGetType(node.rightSide());
+        put(node, left.mul(right));
     }
 
     @Override
     public void visit(Division node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.leftSide());
+        Type right = visitAndGetType(node.rightSide());
+        put(node, left.div(right));
     }
 
     @Override
     public void visit(LogicalAnd node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.leftSide());
+        Type right = visitAndGetType(node.rightSide());
+        put(node, left.and(right));
     }
 
     @Override
     public void visit(LogicalOr node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.leftSide());
+        Type right = visitAndGetType(node.rightSide());
+        put(node, left.or(right));
     }
 
     @Override
     public void visit(LogicalNot node) {
-        throw new RuntimeException("Implement this");
+        Type type = visitAndGetType(node.expression());
+        put(node, type.not());
     }
 
     @Override
     public void visit(Dereference node) {
-        throw new RuntimeException("Implement this");
+        Type type = visitAndGetType(node);
+        put(node, type.deref());
     }
 
     @Override
@@ -221,7 +239,9 @@ public class TypeChecker implements CommandVisitor {
 
     @Override
     public void visit(Assignment node) {
-        throw new RuntimeException("Implement this");
+        Type left = visitAndGetType(node.destination());
+        Type right = visitAndGetType(node.source());
+        put(node, left.assign(right));
     }
 
     @Override
@@ -248,6 +268,11 @@ public class TypeChecker implements CommandVisitor {
     @Override
     public void visit(ast.Error node) {
         put(node, new ErrorType(node.message()));
+    }
+
+    private Type visitAndGetType(Visitable node) {
+        node.accept(this);
+        return getType((Command) node);
     }
 
     private boolean isValidValueType(Type type) {
