@@ -23,12 +23,28 @@ public class Parser {
 
     private void initSymbolTable() {
         symbolTable = new SymbolTable(null, 0);
-        symbolTable.insert("readInt", new IntType());
-        symbolTable.insert("readFloat", new FloatType());
-        symbolTable.insert("printBool", new VoidType());
-        symbolTable.insert("printInt", new VoidType());
-        symbolTable.insert("printFloat", new VoidType());
-        symbolTable.insert("println", new VoidType());
+
+        TypeList emptyTypeList = new TypeList();
+
+        symbolTable.insert("readInt", new FuncType(emptyTypeList, new IntType()));
+        symbolTable.insert("readFloat", new FuncType(emptyTypeList, new FloatType()));
+
+        TypeList boolTypeList = new TypeList();
+        boolTypeList.append(new BoolType());
+
+        symbolTable.insert("printBool", new FuncType(boolTypeList, new VoidType()));
+
+        TypeList intTypeList = new TypeList();
+        intTypeList.append(new IntType());
+
+        symbolTable.insert("printInt", new FuncType(intTypeList, new VoidType()));
+
+        TypeList floatTypeList = new TypeList();
+        floatTypeList.append(new FloatType());
+
+        symbolTable.insert("printFloat", new FuncType(floatTypeList, new VoidType()));
+
+        symbolTable.insert("println", new FuncType(emptyTypeList, new VoidType()));
     }
 
     private void enterScope() {
@@ -41,7 +57,7 @@ public class Parser {
 
     private TypeList buildTypeList(List<Symbol> parameters) {
         TypeList list = new TypeList();
-        for(Symbol symbol : parameters) {
+        for (Symbol symbol : parameters) {
             list.append(symbol.type());
         }
         return list;
@@ -204,6 +220,16 @@ public class Parser {
         throw new QuitParseException(errorMessage);
     }
 
+    private int expectInteger() {
+        Token integerToken = expectRetrieve(Token.Kind.INTEGER);
+        try {
+            return Integer.parseInt(integerToken.lexeme());
+        } catch (NumberFormatException e) {
+            String errorMessage = reportSyntaxError(Token.Kind.INTEGER);
+            throw new QuitParseException(errorMessage);
+        }
+    }
+
     private Token expectRetrieve(Token.Kind kind) {
         Token tok = currentToken;
         if (accept(kind))
@@ -238,6 +264,7 @@ public class Parser {
         enterRule(DESIGNATOR);
 
         Token variableToken = expectRetrieve(Token.Kind.IDENTIFIER);
+
         Symbol variableSymbol = tryResolveSymbol(variableToken);
         Expression returnVal = new AddressOf(variableToken.lineNumber(), variableToken.charPosition(), variableSymbol);
 
@@ -247,6 +274,7 @@ public class Parser {
 
             Expression index = expression0();
             expect(Token.Kind.CLOSE_BRACKET);
+
             returnVal = new Index(lineNum, charPos, returnVal, index);
         }
 
@@ -453,7 +481,7 @@ public class Parser {
     public ArrayDeclaration array_declaration() {
         enterRule(ARRAY_DECLARATION);
 
-        int lineNumer = currentToken.lineNumber();
+        int lineNumber = currentToken.lineNumber();
         int charPos = currentToken.charPosition();
         expect(Token.Kind.ARRAY);
 
@@ -461,22 +489,23 @@ public class Parser {
 
         expect(Token.Kind.COLON);
         Type type = type();
+
         expect(Token.Kind.OPEN_BRACKET);
-        expect(Token.Kind.INTEGER);
+        int arrayLength = expectInteger();
         expect(Token.Kind.CLOSE_BRACKET);
-        int extent = 1;
+
+        ArrayType arrayType = new ArrayType(arrayLength, type);
+        Symbol symbol = tryDeclareSymbol(arrayName, arrayType);
+
         while (accept(Token.Kind.OPEN_BRACKET)) {
-            expect(Token.Kind.INTEGER);
+            arrayLength = expectInteger();
             expect(Token.Kind.CLOSE_BRACKET);
-            extent++;
+            symbol.setType(new ArrayType(arrayLength, symbol.type()));
         }
         expect(Token.Kind.SEMICOLON);
 
-        ArrayType arrayType = new ArrayType(extent,type);
-        Symbol symbol = tryDeclareSymbol(arrayName, arrayType);
-
         exitRule(ARRAY_DECLARATION);
-        return new ArrayDeclaration(lineNumer, charPos, symbol);
+        return new ArrayDeclaration(lineNumber, charPos, symbol);
     }
 
     // function-definition := "func" IDENTIFIER "(" parameter-list ")" ":" type statement-block .
@@ -498,7 +527,7 @@ public class Parser {
         expect(Token.Kind.CLOSE_PAREN);
         expect(Token.Kind.COLON);
         Type type = type();
-        FuncType functionType = new FuncType(buildTypeList(parameterSymbols),type);
+        FuncType functionType = new FuncType(buildTypeList(parameterSymbols), type);
         Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken, functionType);
         //We use false because we don't want a new symbol table to be created for this scope
         //We already have one created that will include the parameters and the function body

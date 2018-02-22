@@ -3,7 +3,6 @@ package types;
 public class BoolType extends Type {
 
     public BoolType() {
-        throw new RuntimeException("implement operators");
     }
 
     @Override

@@ -17,7 +17,7 @@ public class TestTypeChecker {
 
         ArrayList<String> testOutput = new ArrayList<>();
         crux.Scanner s;
-        for (int i = 1; i <= 15; i++) {
+        for (int i = 13; i <= 13; i++) {
             testOutput.clear();
 
 
