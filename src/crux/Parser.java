@@ -7,6 +7,7 @@ import types.*;
 import java.time.temporal.ValueRange;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 import static crux.NonTerminal.*;
 
@@ -490,19 +491,24 @@ public class Parser {
         expect(Token.Kind.COLON);
         Type type = type();
 
+        Stack<Integer> arrayLengthStack = new Stack<>();
+
         expect(Token.Kind.OPEN_BRACKET);
         int arrayLength = expectInteger();
+        arrayLengthStack.push(arrayLength);
         expect(Token.Kind.CLOSE_BRACKET);
-
-        ArrayType arrayType = new ArrayType(arrayLength, type);
-        Symbol symbol = tryDeclareSymbol(arrayName, arrayType);
 
         while (accept(Token.Kind.OPEN_BRACKET)) {
             arrayLength = expectInteger();
+            arrayLengthStack.push(arrayLength);
             expect(Token.Kind.CLOSE_BRACKET);
-            symbol.setType(new ArrayType(arrayLength, symbol.type()));
         }
         expect(Token.Kind.SEMICOLON);
+
+        ArrayType arrayType = new ArrayType(arrayLengthStack.pop(), type);
+        while (!arrayLengthStack.isEmpty())
+            arrayType = new ArrayType(arrayLengthStack.pop(), arrayType);
+        Symbol symbol = tryDeclareSymbol(arrayName, arrayType);
 
         exitRule(ARRAY_DECLARATION);
         return new ArrayDeclaration(lineNumber, charPos, symbol);

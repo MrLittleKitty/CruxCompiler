@@ -3,154 +3,208 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 
-public class Scanner {
-    public static String studentName = "Eric Wolfe";
-    public static String studentID = "76946154";
-    public static String uciNetID = "eawolfe";
+public class Scanner implements Iterable<Token> {
+	public static String studentName = "TODO: YOUR NAME";
+	public static String studentID = "TODO: Your 8-digit id";
+	public static String uciNetID = "TODO: uci-net id";
+	
+	private int lineNum;  // current line count
+	private int charPos;  // character offset for current line
+	private int nextChar; // contains the next char (-1 == EOF)
+	private Reader input;
+	
+	public Scanner(Reader reader)
+	{
+		lineNum = 1;
+		charPos = 0;
+		input = reader;
+		nextChar = readChar();
+	}
 
-    private int lineNum;  // current line count
-    private int charPos;  // character offset for current line
-    private int nextChar = 0; // contains the next char (-1 == EOF)
-    private Reader input;
+	public Token next()
+	{
+		Token tok = nextImpl();
+		//System.out.println("Scanner returning: " + tok);
+		return tok;
+	}
+	
+	private int readChar()
+	{
+		int c = -1;
+		try {
+			c = input.read();
+			charPos++;
+		} catch (IOException e) {
+			//e.printStackTrace();
+		}
+		
+		if (-1 == c) {
+			try {
+				input.close();
+			} catch (IOException e) {
+			}
+		}
+		
+		return c;
+	}
+		
+	private boolean atEOF()
+	{
+		return -1 == nextChar;
+	}
+	
+	/* Invariants:
+	 *  - readOne is called always once before return, nextChar not inspected afterward
+	 */
+	private Token nextImpl()
+	{
+		while (Character.isWhitespace(nextChar)) {
+			if ('\n' == nextChar) {
+				lineNum++;
+				charPos = 0;
+			}
+			nextChar = readChar();
+		}
+		
+		if (atEOF())
+			return Token.EOF(lineNum, charPos);
+		
+		int pos = charPos;
+		
+		if (nextChar == '/') {
+			nextChar = readChar();
+			if (nextChar == '/') {
+				while ((nextChar = readChar()) != '\n') {}
+				return next();
+			}
+			return new Token("/", lineNum, pos);
+		}
+		
+		else if (nextChar == '=') {
+			nextChar = readChar();
+			if (nextChar == '=') {
+				nextChar = readChar();
+				return new Token("==", lineNum, pos);
+			}
+			return new Token("=", lineNum, pos);
+		}
+		
+		else if (nextChar == '<') {
+			nextChar = readChar();
+			if (nextChar == '=') {
+				nextChar = readChar();
+				return new Token("<=", lineNum, pos);
+			}
+			return new Token("<", lineNum, pos);
+		}
+		
+		else if (nextChar == '>') {
+			nextChar = readChar();
+			if (nextChar == '=') {
+				nextChar = readChar();
+				return new Token(">=", lineNum, pos);
+			}
+			return new Token(">", lineNum, pos);
+		}
+		
+		else if (nextChar == ':') {
+			nextChar = readChar();
+			if (nextChar == ':') {
+				nextChar = readChar();
+				return new Token("::", lineNum, pos);
+			}
+			return new Token(":", lineNum, pos);
+		}
+		
+		else if (nextChar == '!') {
+			nextChar = readChar();
+			if (nextChar == '=') {
+				nextChar = readChar();
+				return new Token("!=", lineNum, pos);
+			}
+			return Token.Error("Unexpected character: "+nextChar, lineNum, pos);
+		}
+			
+		else if (Character.isDigit(nextChar))
+		{
+			String num = "";
+			
+			while (Character.isDigit(nextChar)) {
+				num += (char)nextChar;
+				nextChar = readChar();
+			}
+			
+			if (nextChar == '.') {
+				num += (char)nextChar;
+				nextChar = readChar();
+				while (Character.isDigit(nextChar)) {
+					num += (char)nextChar;
+					nextChar = readChar();
+				}
+				return Token.Float(num, lineNum, pos);
+			}
+			
+			return Token.Integer(num, lineNum, pos);
+		}
+		
+		else if (Character.isLetter(nextChar) || nextChar == '_') {
+			String ident = "";
+			
+			while (Character.isLetterOrDigit(nextChar) || nextChar == '_') {
+				ident += (char)nextChar;
+				nextChar = readChar();
+			}
+			
+			for (Token.Kind t : Token.Kind.values()) {
+				if (t.matches(ident))
+					return new Token(ident, lineNum, pos);
+			}
+			
+			return Token.Identifier(ident, lineNum, pos);
+		}
+		
+		else {
+			String c = Character.toString((char)nextChar);
+			
+			for (Token.Kind t : Token.Kind.values()) {
+				if (t.matches(c)) {
+					nextChar = readChar();
+					return new Token(c, lineNum, pos);
+				}
+			}
+			
+			nextChar = readChar();
+			return Token.Error("Unexpected character: "+c, lineNum, pos);
+		}
+	}
 
-    Scanner(Reader reader)
-    {
-        this.input = reader;
-        this.lineNum = 1;
-        this.charPos = 0;
-        readChar();
-    }
+	@Override
+	public Iterator<Token> iterator()
+	{
+		return new ScannerIterator(this);
+	}
+	
+	private class ScannerIterator implements Iterator<Token>
+	{
+		Scanner scanner;
+		
+		public ScannerIterator(Scanner scanner) {
+			this.scanner = scanner;
+		}
 
-	private void readChar() {
-        //If the nextChar is ever -1, then we reached the end of the file and there is no reason to keep reading
-        if(nextChar != -1) {
-            try {
-                if (isLineSeparator(nextChar)) {
-                    lineNum++;
-                    charPos = 0;
-                }
+		@Override
+		public boolean hasNext() {
+			return scanner.nextChar != -1;
+		}
 
-                nextChar = input.read();
-                charPos++;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+		@Override
+		public Token next() {
+			return scanner.next();
+		}
 
-    private void nextLine() {
-        //This will just read and throw away every character until we get to the line separator
-        while(nextChar != -1 && !isLineSeparator(nextChar)) {
-            try {
-                nextChar = input.read();
-                charPos++;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        //If we reach the end of the file before we reach a line separator then we just stop because the file is over
-        if(nextChar == -1)
-            return;
-
-        //Read the next char (handles empty lines and such)
-        readChar();
-    }
-
-
-    /* Invariants:
-     *  1. call assumes that nextChar is already holding an unread character
-     *  2. return leaves nextChar containing an untokenized character
-     */
-    public Token next()
-    {
-        //Skip over whitespace until we get to the next token
-        while(Character.isWhitespace((char)nextChar) || isLineSeparator(nextChar))
-            readChar();
-
-        //This handles line comments that are two '/' characters in a row
-        while('/' == (char)nextChar) { //We use while so that we can handle multiple commented lines
-            readChar();
-            //If its two '/' in a row then its a comment and we skip the whole line
-            if('/' ==(char)nextChar)
-                nextLine();
-            else //Otherwise its only one '/' and its the division token
-                return new Token(lineNum,charPos-1,"/");
-        }
-
-        //Skip over whitespace until we get to the next token
-        while(Character.isWhitespace((char)nextChar) || isLineSeparator(nextChar))
-            readChar();
-
-        int savedLine = lineNum;
-        int saveCharPos = charPos;
-
-        //If we are at the end of the file then keep returning the EOF token
-        if(nextChar == -1)
-            return Token.EOF(savedLine,saveCharPos);
-
-        //If it starts with a digit then its a number
-        if(Character.isDigit((char)nextChar)) {
-            StringBuilder buffer = new StringBuilder();
-            do {
-                buffer.append((char)nextChar);
-                readChar();
-            } while(Character.isDigit((char)nextChar) || ('.' == (char)nextChar && !checkBuffer(buffer,'.')));
-
-            if(checkBuffer(buffer,'.'))
-                return Token.Float(savedLine,saveCharPos,buffer.toString());
-
-            return Token.Int(savedLine,saveCharPos,buffer.toString());
-        }
-        else if(Character.isLetter((char)nextChar) || '_' == (char)nextChar) {
-            //If its a letter (or underscore) then its either an identifier or a keyword
-            StringBuilder buffer = new StringBuilder();
-            do {
-                buffer.append((char)nextChar);
-                readChar();
-            } while(Character.isLetterOrDigit((char)nextChar) || '_' == (char)nextChar);
-
-            if(Token.isLexeme(buffer.toString()))
-                return new Token(savedLine,saveCharPos,buffer.toString());
-
-            return Token.Identifier(savedLine,saveCharPos,buffer.toString());
-        }
-        else { //Its a symbol so either an error or a reserved symbol
-            StringBuilder buffer = new StringBuilder();
-            buffer.append((char)nextChar);
-            readChar();
-
-            if(nextChar != -1 && !Character.isWhitespace((char)nextChar) && !isLineSeparator(nextChar)) {
-                //Add the second char to the buffer so we can see if its a two char lexeme
-                buffer.append((char) nextChar);
-
-                //If its a two char lexeme then read the next char and return the token
-                if (Token.isLexeme(buffer.toString())) {
-                    readChar();
-                    return new Token(savedLine, saveCharPos, buffer.toString());
-                }
-
-                //cuts the last character off the buffer (buffer is now the one char lexeme or its an error)
-                buffer.setLength(buffer.length() - 1);
-            }
-            //If the symbol token isn't a single char lexeme then its an error
-            if(!Token.isLexeme(buffer.toString()))
-                return Token.Error(savedLine,saveCharPos,"Unexpected character: "+buffer.toString());
-
-            //Just return a token with the first char in the buffer
-            return new Token(savedLine,saveCharPos,buffer.toString());
-        }
-    }
-
-    private boolean checkBuffer(StringBuilder buffer, char forChar) {
-        for(int i = 0; i < buffer.length(); i++) {
-            if(buffer.charAt(i) == forChar)
-                return true;
-        }
-        return false;
-    }
-
-    private boolean isLineSeparator(int character) {
-        return character == 13 || character == 10;
-    }
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+	}
 }

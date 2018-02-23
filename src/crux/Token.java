@@ -52,32 +52,30 @@ public class Token {
 
         private String lexeme;
 
-        Kind()
-        {
+        Kind() {
             lexeme = null;
         }
 
-        Kind(String lexeme)
-        {
+        Kind(String lexeme) {
             this.lexeme = lexeme;
         }
 
-        public boolean hasStaticLexeme()
-        {
+        public boolean hasStaticLexeme() {
             return lexeme != null;
         }
 
-        public boolean matchesLexeme(String lexeme) {
+        public boolean matches(String lexeme) {
             return lexeme.equals(this.lexeme);
         }
     }
 
     //A HashSet containing all the static lexemes will make it quick for the tokenizer to know if something is a lexeme
     private static final HashSet<String> LexemeSet = new HashSet<>();
+
     static {
         Kind[] kinds = Kind.values();
-        for(int i = 0; i < kinds.length-5; i++) {
-                LexemeSet.add(kinds[i].lexeme);
+        for (int i = 0; i < kinds.length - 5; i++) {
+            LexemeSet.add(kinds[i].lexeme);
         }
     }
 
@@ -90,8 +88,7 @@ public class Token {
     private Kind kind;
     private String lexeme = "";
 
-    private Token(int lineNum, int charPos)
-    {
+    private Token(int lineNum, int charPos) {
         this.lineNum = lineNum;
         this.charPos = charPos;
 
@@ -99,8 +96,7 @@ public class Token {
         this.lexeme = "No Lexeme Given";
     }
 
-    public Token(int lineNum, int charPos, String lexeme)
-    {
+    public Token(String lexeme, int lineNum, int charPos) {
         this.lineNum = lineNum;
         this.charPos = charPos;
 
@@ -110,26 +106,23 @@ public class Token {
         Kind[] values = Kind.values();
 
         //We do length-5 so that we never iterate through the Kinds that have dynamic lexemes
-        for(int i = 0; i < values.length-5; i++) {
-            if(values[i].matchesLexeme(lexeme)) {
+        for (int i = 0; i < values.length - 5; i++) {
+            if (values[i].matches(lexeme)) {
                 this.kind = values[i];
                 break;
             }
         }
     }
 
-    public int lineNumber()
-    {
+    public int lineNumber() {
         return lineNum;
     }
 
-    public int charPosition()
-    {
+    public int charPosition() {
         return charPos;
     }
 
-    public String lexeme()
-    {
+    public String lexeme() {
         return lexeme;
     }
 
@@ -141,42 +134,41 @@ public class Token {
         return this.kind.equals(kind);
     }
 
-    public String toString()
-    {
-        if(this.kind == Kind.IDENTIFIER || this.kind == Kind.FLOAT || this.kind == Kind.INTEGER || this.kind == Kind.ERROR)
-            return this.kind.name()+"("+this.lexeme+")(lineNum:"+this.lineNum+", charPos:"+this.charPos+")";
-        return this.kind.name()+"(lineNum:"+this.lineNum+", charPos:"+this.charPos+")";
+    public String toString() {
+        if (this.kind == Kind.IDENTIFIER || this.kind == Kind.FLOAT || this.kind == Kind.INTEGER || this.kind == Kind.ERROR)
+            return this.kind.name() + "(" + this.lexeme + ")(lineNum:" + this.lineNum + ", charPos:" + this.charPos + ")";
+        return this.kind.name() + "(lineNum:" + this.lineNum + ", charPos:" + this.charPos + ")";
     }
 
-    public static Token Float(int lineNum, int charPos, String lexeme) {
-        Token t = new Token(lineNum,charPos);
+    public static Token Float(String lexeme, int lineNum, int charPos) {
+        Token t = new Token(lineNum, charPos);
         t.kind = Kind.FLOAT;
         t.lexeme = lexeme;
         return t;
     }
 
-    public static Token Int(int lineNum, int charPos, String lexeme) {
-        Token t = new Token(lineNum,charPos);
+    public static Token Integer(String lexeme, int lineNum, int charPos) {
+        Token t = new Token(lineNum, charPos);
         t.kind = Kind.INTEGER;
         t.lexeme = lexeme;
         return t;
     }
 
-    public static Token Identifier(int lineNum, int charPos, String lexeme) {
-        Token t = new Token(lineNum,charPos);
+    public static Token Identifier(String lexeme, int lineNum, int charPos) {
+        Token t = new Token(lineNum, charPos);
         t.kind = Kind.IDENTIFIER;
         t.lexeme = lexeme;
         return t;
     }
 
     public static Token EOF(int lineNum, int charPos) {
-        Token t = new Token(lineNum,charPos);
+        Token t = new Token(lineNum, charPos);
         t.kind = Kind.EOF;
         return t;
     }
 
-    public static Token Error(int lineNum, int charPos, String message) {
-        Token t = new Token(lineNum,charPos);
+    public static Token Error(String message, int lineNum, int charPos) {
+        Token t = new Token(lineNum, charPos);
         t.kind = Kind.ERROR;
         t.lexeme = message;
         return t;
