@@ -16,6 +16,19 @@ public class AddressType extends Type {
         return base;
     }
 
+    public Type index(Type type) {
+        if (type instanceof IntType && base instanceof ArrayType)
+            return new AddressType(base.index(type));
+        return super.index(type);
+    }
+
+    public Type assign(Type type) {
+        if (type.equivalent(base))
+            return type.assign(base);
+
+        return super.assign(type);
+    }
+
     @Override
     public String toString() {
         return "Address(" + base + ")";

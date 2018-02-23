@@ -25,6 +25,13 @@ public class ArrayType extends Type {
         return base;
     }
 
+    public Type assign(Type type) {
+        if(type.equivalent(base))
+            return type;
+
+        return super.assign(type);
+    }
+
     @Override
     public String toString() {
         return "array[" + extent + "," + base + "]";

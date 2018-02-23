@@ -28,12 +28,12 @@ public class BoolType extends Type {
         return new BoolType();
     }
 
-//    public Type compare(Type that) {
-//        if (!(that instanceof BoolType))
-//            return super.compare(that);
-//
-//        return new BoolType();
-//    }
+    public Type assign(Type type) {
+        if (type instanceof BoolType)
+            return new BoolType();
+
+        return super.assign(type);
+    }
 
     @Override
     public boolean equivalent(Type that) {

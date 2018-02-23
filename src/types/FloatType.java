@@ -45,6 +45,13 @@ public class FloatType extends Type {
         return new BoolType();
     }
 
+    public Type assign(Type type) {
+        if (type instanceof FloatType)
+            return new FloatType();
+
+        return super.assign(type);
+    }
+
     @Override
     public boolean equivalent(Type that) {
         if (that == null)

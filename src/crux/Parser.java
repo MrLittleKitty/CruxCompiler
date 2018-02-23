@@ -520,6 +520,9 @@ public class Parser {
 
         expect(Token.Kind.OPEN_PAREN);
 
+        //We need to declare the name of the function before entering the new scope
+        Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken, null);
+
         //The parameters are in the same scope as the function body, so we enter a new scope at the parameters
         enterScope();
 
@@ -528,7 +531,9 @@ public class Parser {
         expect(Token.Kind.COLON);
         Type type = type();
         FuncType functionType = new FuncType(buildTypeList(parameterSymbols), type);
-        Symbol functionNameSymbol = tryDeclareSymbol(functionNameToken, functionType);
+
+        //Set the functions type because it was already declared
+        functionNameSymbol.setType(functionType);
         //We use false because we don't want a new symbol table to be created for this scope
         //We already have one created that will include the parameters and the function body
         StatementList statementBody = statement_block(false);

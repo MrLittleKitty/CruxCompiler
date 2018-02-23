@@ -69,7 +69,11 @@ public class TypeChecker implements CommandVisitor {
 
     @Override
     public void visit(ExpressionList node) {
-        throw new RuntimeException("Implement this");
+        TypeList expressionTypes = new TypeList();
+        for (Expression argument : node) {
+            expressionTypes.append(visitAndGetType(argument));
+        }
+        put(node, expressionTypes);
     }
 
     @Override
@@ -228,13 +232,15 @@ public class TypeChecker implements CommandVisitor {
 
     @Override
     public void visit(Dereference node) {
-        Type type = visitAndGetType(node);
+        Type type = visitAndGetType(node.expression());
         put(node, type.deref());
     }
 
     @Override
     public void visit(Index node) {
-        throw new RuntimeException("Implement this");
+        Type baseType = visitAndGetType(node.base());
+        Type indexType = visitAndGetType(node.amount());
+        put(node, baseType.index(indexType));
     }
 
     @Override
@@ -246,7 +252,8 @@ public class TypeChecker implements CommandVisitor {
 
     @Override
     public void visit(Call node) {
-        throw new RuntimeException("Implement this");
+        Type argumentsTypeList = visitAndGetType(node.arguments());
+        put(node, node.function().type().call(argumentsTypeList));
     }
 
     @Override

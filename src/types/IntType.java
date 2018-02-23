@@ -45,6 +45,13 @@ public class IntType extends Type {
         return new BoolType();
     }
 
+    public Type assign(Type type) {
+        if (type instanceof IntType)
+            return new IntType();
+
+        return super.assign(type);
+    }
+
     @Override
     public boolean equivalent(Type that) {
         if (that == null)
