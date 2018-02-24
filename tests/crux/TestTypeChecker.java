@@ -17,7 +17,7 @@ public class TestTypeChecker {
 
         ArrayList<String> testOutput = new ArrayList<>();
         crux.Scanner s;
-        for (int i = 13; i <= 13; i++) {
+        for (int i = 1; i <= 15; i++) {
             testOutput.clear();
 
 
@@ -45,7 +45,7 @@ public class TestTypeChecker {
                     if (tc.hasError())
                         outputReport = "Error type-checking file.\n" + tc.errorReport();
                     else
-                        outputReport = "Crux Program is has no type errors.";
+                        outputReport = "Crux Program has no type errors.";
                 }
 
                 System.out.println("Report for file: " + in.getName());

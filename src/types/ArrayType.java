@@ -26,7 +26,7 @@ public class ArrayType extends Type {
     }
 
     public Type assign(Type type) {
-        if(type.equivalent(base))
+        if (type.equivalent(base))
             return type;
 
         return super.assign(type);
@@ -41,7 +41,7 @@ public class ArrayType extends Type {
     public boolean equivalent(Type that) {
         if (that == null)
             return false;
-        if (!(that instanceof IntType))
+        if (!(that instanceof ArrayType))
             return false;
 
         ArrayType aType = (ArrayType) that;

@@ -3,6 +3,7 @@ package types;
 import java.util.HashMap;
 
 import ast.*;
+import crux.Symbol;
 
 public class TypeChecker implements CommandVisitor {
 
@@ -14,6 +15,9 @@ public class TypeChecker implements CommandVisitor {
 
     private HashMap<Command, Type> typeMap;
     private StringBuffer errorBuffer;
+
+    private Type currentReturnType;
+    private Symbol currentFunction;
 
     /* Useful error strings:
      *
@@ -169,10 +173,20 @@ public class TypeChecker implements CommandVisitor {
             put(node, finalType);
         }
 
+        currentReturnType = returnType;
+        currentFunction = node.function();
+
         //Now we need to check the body of the function for errors like wrong return type, no returned value, etc.
         node.body().accept(this);
 
+        //If not all code paths return a value and the return type is something other than void
+        if (!containsReturn(node.body()) && !currentReturnType.equivalent(VOID))
+            put(node, new ErrorType("Not all paths in function " + currentFunction.name() + " have a return."));
+        else
+            put(node, currentReturnType);
 
+        currentReturnType = null;
+        currentFunction = null;
     }
 
     @Override
@@ -258,18 +272,49 @@ public class TypeChecker implements CommandVisitor {
 
     @Override
     public void visit(IfElseBranch node) {
-        throw new RuntimeException("Implement this");
+        Type conditionType = visitAndGetType(node.condition());
+        if (!conditionType.equivalent(BOOL))
+            put(node, new ErrorType("IfElseBranch requires bool condition not " + conditionType + "."));
+        else {
+            node.thenBlock().accept(this);
+            node.elseBlock().accept(this);
+        }
     }
 
     @Override
     public void visit(WhileLoop node) {
-
-        throw new RuntimeException("Implement this");
+        Type conditionType = visitAndGetType(node.condition());
+        if (!conditionType.equivalent(BOOL))
+            put(node, new ErrorType("WhileLoop requires bool condition not " + conditionType + "."));
+        else {
+            node.body().accept(this);
+        }
     }
 
     @Override
     public void visit(Return node) {
-        throw new RuntimeException("Implement this");
+        Type returnType = visitAndGetType(node.argument());
+        if (!returnType.equivalent(currentReturnType))
+            put(node, new ErrorType("Function " + currentFunction.name() + " returns " + currentReturnType
+                    + " not " + returnType + "."));
+        else
+            put(node, returnType);
+    }
+
+    private boolean containsReturn(StatementList statementList) {
+        for (Statement statement : statementList) {
+            if (statement instanceof Return) {
+                return true;
+            }
+            if (statement instanceof IfElseBranch) {
+                IfElseBranch branch = (IfElseBranch) statement;
+                boolean ifReturns = containsReturn(branch.thenBlock());
+                boolean elseReturns = containsReturn(branch.elseBlock());
+                if (ifReturns && elseReturns)
+                    return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -280,17 +325,5 @@ public class TypeChecker implements CommandVisitor {
     private Type visitAndGetType(Visitable node) {
         node.accept(this);
         return getType((Command) node);
-    }
-
-    private boolean isValidValueType(Type type) {
-        while (true) {
-            if (type instanceof ArrayType) {
-                ArrayType t = (ArrayType) type;
-                type = t.base();
-            } else if (type.equivalent(INT) || type.equivalent(BOOL) || type.equivalent(FLOAT))
-                return true;
-            else
-                return false;
-        }
     }
 }
