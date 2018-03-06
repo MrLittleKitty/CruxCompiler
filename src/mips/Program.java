@@ -2,26 +2,37 @@ package mips;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Vector;
 
 public class Program {
     private Vector<String> codeSegment;
     private Vector<String> dataSegment;
-    
-    private int labelCounter;
-    
+
+    private final HashMap<String,Integer> labelMap;
+
     public Program()
     {
-        labelCounter = -1;
+        labelMap = new HashMap<>();
         codeSegment = new Vector<String>();
         dataSegment = new Vector<String>();
     }
     
     // Returns a unique label
-    public String newLabel()
+    public String requestLabel(String label)
     {
-        labelCounter++;
-        return "label." + labelCounter;
+        Integer value = 0;
+        if(labelMap.containsKey(label))
+            value = labelMap.get(label);
+
+        String returnVal;
+        if (value == 0)
+            returnVal = label;
+        else
+            returnVal = label+"."+value.toString();
+
+        labelMap.put(label,value+1);
+        return returnVal;
     }
     
     // Insert an instruction into the code segment
@@ -79,8 +90,10 @@ public class Program {
     public void insertPrologue(int pos, int frameSize)
     {
         ArrayList<String> prologue = new ArrayList<String>();
-        throw new RuntimeException("Implement creation of function prologue");
+
         codeSegment.addAll(pos, prologue);
+
+        throw new RuntimeException("Implement creation of function prologue");
     }
     
     // Append a function epilogue
