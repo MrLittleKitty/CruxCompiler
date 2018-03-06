@@ -6,38 +6,34 @@ import ast.*;
 import types.*;
 
 public class CodeGen implements ast.CommandVisitor {
-    
+
     private StringBuffer errorBuffer = new StringBuffer();
     private TypeChecker tc;
     private Program program;
     private ActivationRecord currentFunction;
 
-    public CodeGen(TypeChecker tc)
-    {
+    public CodeGen(TypeChecker tc) {
         this.tc = tc;
         this.program = new Program();
     }
-    
-    public boolean hasError()
-    {
+
+    public boolean hasError() {
         return errorBuffer.length() != 0;
     }
-    
-    public String errorReport()
-    {
+
+    public String errorReport() {
         return errorBuffer.toString();
     }
 
-    private class CodeGenException extends RuntimeException
-    {
+    private class CodeGenException extends RuntimeException {
         private static final long serialVersionUID = 1L;
+
         public CodeGenException(String errorMessage) {
             super(errorMessage);
         }
     }
-    
-    public boolean generate(Command ast)
-    {
+
+    public boolean generate(Command ast) {
         try {
             currentFunction = ActivationRecord.newGlobalFrame();
             ast.accept(this);
@@ -46,9 +42,8 @@ public class CodeGen implements ast.CommandVisitor {
             return false;
         }
     }
-    
-    public Program getProgram()
-    {
+
+    public Program getProgram() {
         return program;
     }
 
@@ -59,7 +54,8 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(DeclarationList node) {
-        throw new RuntimeException("Implement this");
+        node.accept(this);
+        program.appendExitSequence();
     }
 
     @Override
@@ -84,17 +80,17 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(LiteralInt node) {
-        throw new RuntimeException("Implement this");
+
     }
 
     @Override
     public void visit(VariableDeclaration node) {
-        throw new RuntimeException("Implement this");
+        currentFunction.add(program, node);
     }
 
     @Override
     public void visit(ArrayDeclaration node) {
-        throw new RuntimeException("Implement this");
+        currentFunction.add(program, node);
     }
 
     @Override
@@ -131,7 +127,7 @@ public class CodeGen implements ast.CommandVisitor {
     public void visit(LogicalOr node) {
         throw new RuntimeException("Implement this");
     }
-    
+
     @Override
     public void visit(LogicalNot node) {
         throw new RuntimeException("Implement this");

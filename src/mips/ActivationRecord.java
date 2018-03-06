@@ -17,7 +17,7 @@ public class ActivationRecord {
         return new GlobalFrame();
     }
 
-    protected static int numBytes(Type type) {
+    public static int numBytes(Type type) {
         if (type instanceof BoolType)
             return 4;
         if (type instanceof IntType)

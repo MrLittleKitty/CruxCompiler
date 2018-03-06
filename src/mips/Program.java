@@ -1,5 +1,7 @@
 package mips;
 
+import types.IntType;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,7 +60,14 @@ public class Program {
 
     // Push an integer register on the stack
     public void pushInt(String reg) {
-        throw new RuntimeException("Implement pushing int register value to stack");
+        String increaseStack = "subu $sp, $sp, %i";
+        String pushValue = "sw %s, ($sp)";
+
+        appendInstruction(String.format(increaseStack,
+                ActivationRecord.numBytes(new IntType()))); //Increase the stack size by the number of bytes in an int
+
+        appendInstruction(String.format(pushValue,
+                reg)); //Store the value from the register into the address that the stack pointer points too
     }
 
     // Push a single precision floating point register on the stack
@@ -68,7 +77,14 @@ public class Program {
 
     // Pop an integer from the stack into register reg
     public void popInt(String reg) {
-        throw new RuntimeException("Implement popping int from stack to register");
+        String popValue = "lw %s, ($sp)";
+        String decreaseStack = "addiu $sp, $sp, %i";
+
+        appendInstruction(String.format(popValue,
+                reg)); //Store the value from the register into the address that the stack pointer points too
+
+        appendInstruction(String.format(decreaseStack,
+                ActivationRecord.numBytes(new IntType()))); //Increase the stack size by the number of bytes in an int
     }
 
     // Pop a floating point value from the stack into register reg
