@@ -53,8 +53,6 @@ public class ActivationRecord {
             arguments.put(arg, offset);
             offset += numBytes(arg.type());
         }
-
-        stackSize = offset
     }
 
     public String name() {
@@ -69,16 +67,41 @@ public class ActivationRecord {
         return stackSize;
     }
 
-    public void add(Program prog, ast.VariableDeclaration var) {
-        throw new RuntimeException("implement adding variable to local function space");
+    public void add(Program program, ast.VariableDeclaration var) {
+        allocateLocalSpace(program, var.symbol());
     }
 
-    public void add(Program prog, ast.ArrayDeclaration array) {
-        throw new RuntimeException("implement adding array to local function space");
+    public void add(Program program, ast.ArrayDeclaration array) {
+        //Arrays aren't valid local variables in functions (according to grammar) but they are allocated just like locals
+        allocateLocalSpace(program, array.symbol());
     }
 
-    public void getAddress(Program prog, String reg, Symbol sym) {
-        throw new RuntimeException("implement accessing address of local or parameter symbol");
+    private void allocateLocalSpace(Program program, Symbol symbol) {
+        int space = ActivationRecord.numBytes(symbol.type());
+        String instruction = "subu &sp, &sp, %i";
+        program.appendInstruction(String.format(instruction,
+                space)); //The amount of space we are allocating on the stack for this local variable
+        int offset = -12 - stackSize;
+        locals.put(symbol, offset);
+        stackSize += space;
+    }
+
+    public void getAddress(Program program, String register, Symbol sym) {
+        Integer offset;
+        if (locals.containsKey(sym))
+            offset = locals.get(sym);
+        else if (arguments.containsKey(sym))
+            offset = arguments.get(sym);
+        else {
+            parent.getAddress(program, register, sym);
+            return;
+        }
+
+        //This means its one of the parameters
+        String instruction = "addi %s, $fp, %s";
+        program.appendInstruction(String.format(instruction,
+                register, //The register that we are going to load the address into
+                offset)); //The offset of the parameter variable that they are referencing
     }
 }
 
@@ -110,11 +133,11 @@ class GlobalFrame extends ActivationRecord {
     }
 
     @Override
-    public void getAddress(Program program, String reg, Symbol sym) {
+    public void getAddress(Program program, String register, Symbol sym) {
         String instruction = "la %s, %s";
         //Load the address into the the given register. For global data we just give the unique label address of the symbol
         program.appendInstruction(String.format(instruction,
-                reg, //The register that we are going to store the address into
+                register, //The register that we are going to store the address into
                 getUniqueGlobalLabel(sym.name()))); //The label of the given global symbol
     }
 }
