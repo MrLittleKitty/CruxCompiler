@@ -1,5 +1,6 @@
 package mips;
 
+import types.FloatType;
 import types.IntType;
 
 import java.io.PrintStream;
@@ -72,7 +73,14 @@ public class Program {
 
     // Push a single precision floating point register on the stack
     public void pushFloat(String reg) {
-        throw new RuntimeException("Implement pushing float register value to stack");
+        String increaseStack = "subu $sp, $sp, %i";
+        String pushValue = "swc1 %s, ($sp)";
+
+        appendInstruction(String.format(increaseStack,
+                ActivationRecord.numBytes(new FloatType()))); //Increase the stack size by the number of bytes in a float
+
+        appendInstruction(String.format(pushValue,
+                reg)); //Store the value from the register into the address that the stack pointer points too
     }
 
     // Pop an integer from the stack into register reg
@@ -89,7 +97,14 @@ public class Program {
 
     // Pop a floating point value from the stack into register reg
     public void popFloat(String reg) {
-        throw new RuntimeException("Implement popping floating point from stack to register");
+        String popValue = "lwc1 %s, ($sp)";
+        String decreaseStack = "addiu $sp, $sp, %i";
+
+        appendInstruction(String.format(popValue,
+                reg)); //Store the value from the register into the address that the stack pointer points too
+
+        appendInstruction(String.format(decreaseStack,
+                ActivationRecord.numBytes(new FloatType()))); //Increase the stack size by the number of bytes in an int
     }
 
     // Insert a function prologue at position pos

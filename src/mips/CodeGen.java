@@ -80,7 +80,10 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(LiteralInt node) {
-
+        String moveToRegister = "li $t0, %i";
+        program.appendInstruction(String.format(moveToRegister,
+                node.value())); //Move the into value into the temp register
+        program.pushInt("$t0");
     }
 
     @Override
