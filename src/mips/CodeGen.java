@@ -70,12 +70,22 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(LiteralBool node) {
-        throw new RuntimeException("Implement this");
+        String storeValue;
+        if (node.value() == LiteralBool.Value.TRUE)
+            storeValue = "li $t0, 1";
+        else
+            storeValue = "li $t0, 0";
+
+        program.appendInstruction(storeValue); //Store the bool value into a temp register (1 or 0)
+        program.pushInt("$t0");
     }
 
     @Override
     public void visit(LiteralFloat node) {
-        throw new RuntimeException("Implement this");
+        String loadFloat = "li.s $f1, %g";
+        program.appendInstruction(String.format(loadFloat,
+                node.value()));
+        program.pushFloat("$f1");
     }
 
     @Override
