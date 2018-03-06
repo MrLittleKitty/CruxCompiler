@@ -9,109 +9,112 @@ public class Program {
     private Vector<String> codeSegment;
     private Vector<String> dataSegment;
 
-    private final HashMap<String,Integer> labelMap;
+    private final HashMap<String, Integer> labelMap;
 
-    public Program()
-    {
+    public Program() {
         labelMap = new HashMap<>();
         codeSegment = new Vector<String>();
         dataSegment = new Vector<String>();
     }
-    
+
     // Returns a unique label
-    public String requestLabel(String label)
-    {
+    public String requestLabel(String label) {
         Integer value = 0;
-        if(labelMap.containsKey(label))
+        if (labelMap.containsKey(label))
             value = labelMap.get(label);
 
         String returnVal;
         if (value == 0)
             returnVal = label;
         else
-            returnVal = label+"."+value.toString();
+            returnVal = label + "." + value.toString();
 
-        labelMap.put(label,value+1);
+        labelMap.put(label, value + 1);
         return returnVal;
     }
-    
+
     // Insert an instruction into the code segment
     // Returns the position of the instruction in the stream
-    public int appendInstruction(String instr)
-    {
+    public int appendInstruction(String instr) {
         codeSegment.add(instr);
         return codeSegment.size() - 1;
     }
-    
+
     // Replaces the instruction at position pos
-    public void replaceInstruction(int pos, String instr)
-    {
+    public void replaceInstruction(int pos, String instr) {
         codeSegment.set(pos, instr);
     }
-    
+
     // Inserts an instruction at position pos
     // All instructions after pos are shifted down
-    public void insertInstruction(int pos, String instr)
-    {
+    public void insertInstruction(int pos, String instr) {
         codeSegment.add(pos, instr);
     }
-    
+
     // Append item to data segment
-    public void appendData(String data)
-    {
+    public void appendData(String data) {
         dataSegment.add(data);
     }
-    
+
     // Push an integer register on the stack
-    public void pushInt(String reg)
-    {
+    public void pushInt(String reg) {
         throw new RuntimeException("Implement pushing int register value to stack");
     }
-    
+
     // Push a single precision floating point register on the stack
-    public void pushFloat(String reg)
-    {
+    public void pushFloat(String reg) {
         throw new RuntimeException("Implement pushing float register value to stack");
     }
-    
+
     // Pop an integer from the stack into register reg
-    public void popInt(String reg)
-    {
+    public void popInt(String reg) {
         throw new RuntimeException("Implement popping int from stack to register");
     }
-    
+
     // Pop a floating point value from the stack into register reg
-    public void popFloat(String reg)
-    {
+    public void popFloat(String reg) {
         throw new RuntimeException("Implement popping floating point from stack to register");
     }
-    
+
     // Insert a function prologue at position pos
-    public void insertPrologue(int pos, int frameSize)
-    {
+    public void insertPrologue(int pos, int frameSize) {
         ArrayList<String> prologue = new ArrayList<String>();
+        prologue.add("subu $sp, $sp, 8");
+        prologue.add("sw $fp, 0($sp)");
+        prologue.add("sw $ra, 4($sp)");
+        prologue.add("addi $fp, $sp, 8");
+
+        String allocateSpace = "subu $sp, $sp, %i";
+        prologue.add(String.format(allocateSpace,
+                frameSize)); //The size of the local variables that we want to allocate
 
         codeSegment.addAll(pos, prologue);
-
-        throw new RuntimeException("Implement creation of function prologue");
     }
-    
+
     // Append a function epilogue
-    public void appendEpilogue(int frameSize)
-    {
-        throw new RuntimeException("Implement creation of function epilogue");
+    public void appendEpilogue(int position, int frameSize) {
+        ArrayList<String> prologue = new ArrayList<String>();
+
+        String deallocateSpace = "addu $sp, $sp, %i";
+        prologue.add(String.format(deallocateSpace,
+                frameSize)); //The size of the local variables that we want to deallocate
+
+        prologue.add("lw $ra, 4($sp)");
+        prologue.add("lw $fp, 0($sp)");
+        prologue.add("addu $sp, $sp, 8");
+        prologue.add("jr $ra");
+
+        codeSegment.addAll(position, prologue);
     }
 
     // Insert code that terminates the program
-    public void appendExitSequence()
-    {
+    public void appendExitSequence() {
         codeSegment.add("li    $v0, 10");
         codeSegment.add("syscall");
     }
-    
+
     //Print the program to the provided stream
-    public void print(PrintStream s)
-    {
+    public void print(PrintStream s) {
         s.println(".data                         # BEGIN Data Segment");
         for (String data : dataSegment)
             s.println(data);
@@ -137,20 +140,18 @@ public class Program {
             s.println(code);
         s.println("                              # END Code Segment");
     }
-    
+
     // Prints the current stack value, assuming it's an int
-    public void funcPrintInt(PrintStream s)
-    {
+    private void funcPrintInt(PrintStream s) {
         s.println("func.printInt:");
         s.println("lw   $a0, 0($sp)");
         s.println("li   $v0, 1");
         s.println("syscall");
         s.println("jr $ra");
     }
-    
+
     // Prints the current stack value assuming it's a bool
-    public void funcPrintBool(PrintStream s)
-    {
+    private void funcPrintBool(PrintStream s) {
         s.println("func.printBool:");
         s.println("lw $a0, 0($sp)");
         s.println("beqz $a0, label.printBool.loadFalse");
@@ -163,30 +164,27 @@ public class Program {
         s.println("syscall");
         s.println("jr $ra");
     }
-    
+
     // Prints the current stack value assuming it's a float
-    private void funcPrintFloat(PrintStream s)
-    {
+    private void funcPrintFloat(PrintStream s) {
         s.println("func.printFloat:");
         s.println("l.s  $f12, 0($sp)");
         s.println("li   $v0,  2");
         s.println("syscall");
         s.println("jr $ra");
     }
-    
+
     // Prints a newline
-    private void funcPrintln(PrintStream s)
-    {
+    private void funcPrintln(PrintStream s) {
         s.println("func.println:");
         s.println("la   $a0, data.newline");
         s.println("li   $v0, 4");
         s.println("syscall");
         s.println("jr $ra");
     }
-    
+
     // Reads an int onto the stack
-    private void funcReadInt(PrintStream s)
-    {
+    private void funcReadInt(PrintStream s) {
         s.println("func.readInt:");
         s.println("la   $a0, data.intquery");
         s.println("li   $v0, 4");
@@ -195,10 +193,9 @@ public class Program {
         s.println("syscall");
         s.println("jr $ra");
     }
-    
+
     // Reads a float onto the stack
-    private void funcReadFloat(PrintStream s)
-    {
+    private void funcReadFloat(PrintStream s) {
         s.println("func.readFloat:");
         s.println("la   $a0, data.floatquery");
         s.println("li   $v0, 4");

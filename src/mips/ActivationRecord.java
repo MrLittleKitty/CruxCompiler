@@ -53,6 +53,8 @@ public class ActivationRecord {
             arguments.put(arg, offset);
             offset += numBytes(arg.type());
         }
+
+        stackSize = offset
     }
 
     public String name() {
