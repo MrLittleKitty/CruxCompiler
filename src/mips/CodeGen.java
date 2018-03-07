@@ -159,50 +159,85 @@ public class CodeGen implements ast.CommandVisitor {
         currentFunction = record.parent();
     }
 
+    private void handleArithmetic(Type type, String operation) {
+        if (type.equivalent(new IntType())) {
+            popLeftRightInts();
+            String instruction = "%s $t2, $t1, $t0";
+            instruction = String.format(instruction, operation);
+            program.appendInstruction(instruction);
+            program.pushInt("$t2");
+        } else {
+            String floatOp = operation + ".s";
+            popLeftRightFloats();
+            String instruction = "%s $f3, $f2, $f1";
+            instruction = String.format(instruction, floatOp);
+            program.appendInstruction(instruction);
+            program.pushFloat("$f3");
+        }
+    }
+
+    private void popLeftRightInts() {
+        program.popInt("$t0"); //Right side into $t0
+        program.popInt("$t1"); //Left side into $t1
+    }
+
+    private void popLeftRightFloats() {
+        program.popFloat("$f1"); //Right side into $f1
+        program.popFloat("$f2"); //Left side into $f2
+    }
+
     @Override
     public void visit(Addition node) {
         node.leftSide().accept(this);
         node.rightSide().accept(this);
 
         Type type = tc.getType(node);
-        if (type.equivalent(new IntType())) {
-            program.popInt("$t0"); //Right side into $t0
-            program.popInt("$t1"); //Left side into $t1
-            String instruction = "add $t2, $t0, $t1"; //Add the two together and store in $t2
-            program.appendInstruction(instruction);
-            program.pushInt("$t2"); //Push the addition result onto the stack
-        } else { //Addition of floats
-            program.popFloat("$f1"); //Right side into $f1
-            program.popFloat("$f2"); //Left side into $f2
-            String instruction = "add.s $f3, $f1, $f2"; //Add the two together and store in $f3
-            program.appendInstruction(instruction);
-            program.pushFloat("$f3"); //Push the addition result onto the stack
-        }
+        handleArithmetic(type, "add");
     }
 
     @Override
     public void visit(Subtraction node) {
-        throw new RuntimeException("Implement this");
+        node.leftSide().accept(this);
+        node.rightSide().accept(this);
+
+        Type type = tc.getType(node);
+        handleArithmetic(type, "sub");
     }
 
     @Override
     public void visit(Multiplication node) {
-        throw new RuntimeException("Implement this");
+        node.leftSide().accept(this);
+        node.rightSide().accept(this);
+
+        Type type = tc.getType(node);
+        handleArithmetic(type, "mul");
     }
 
     @Override
     public void visit(Division node) {
-        throw new RuntimeException("Implement this");
+        node.leftSide().accept(this);
+        node.rightSide().accept(this);
+
+        Type type = tc.getType(node);
+        handleArithmetic(type, "div");
     }
 
     @Override
     public void visit(LogicalAnd node) {
-        throw new RuntimeException("Implement this");
+        node.leftSide().accept(this);
+        node.rightSide().accept(this);
+
+        //Pass IntType into the helper method because booleans are really just one and zero (int)
+        handleArithmetic(new IntType(), "and");
     }
 
     @Override
     public void visit(LogicalOr node) {
-        throw new RuntimeException("Implement this");
+        node.leftSide().accept(this);
+        node.rightSide().accept(this);
+
+        //Pass IntType into the helper method because booleans are really just one and zero (int)
+        handleArithmetic(new IntType(), "or");
     }
 
     @Override
