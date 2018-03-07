@@ -68,7 +68,8 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(AddressOf node) {
-        throw new RuntimeException("Implement this");
+        currentFunction.getAddress(program, "$t0", node.symbol()); //Get the address of the variable into $t0
+        program.pushInt("$t0"); //Push $t0 onto the stack (address is just an int so we can push it this way)
     }
 
     @Override
