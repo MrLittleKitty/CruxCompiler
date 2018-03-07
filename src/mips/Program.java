@@ -61,7 +61,7 @@ public class Program {
 
     // Push an integer register on the stack
     public void pushInt(String reg) {
-        String increaseStack = "subu $sp, $sp, %i";
+        String increaseStack = "subu $sp, $sp, %d";
         String pushValue = "sw %s, ($sp)";
 
         appendInstruction(String.format(increaseStack,
@@ -73,7 +73,7 @@ public class Program {
 
     // Push a single precision floating point register on the stack
     public void pushFloat(String reg) {
-        String increaseStack = "subu $sp, $sp, %i";
+        String increaseStack = "subu $sp, $sp, %d";
         String pushValue = "swc1 %s, ($sp)";
 
         appendInstruction(String.format(increaseStack,
@@ -86,7 +86,7 @@ public class Program {
     // Pop an integer from the stack into register reg
     public void popInt(String reg) {
         String popValue = "lw %s, ($sp)";
-        String decreaseStack = "addiu $sp, $sp, %i";
+        String decreaseStack = "addi $sp, $sp, %d";
 
         appendInstruction(String.format(popValue,
                 reg)); //Store the value from the register into the address that the stack pointer points too
@@ -98,7 +98,7 @@ public class Program {
     // Pop a floating point value from the stack into register reg
     public void popFloat(String reg) {
         String popValue = "lwc1 %s, ($sp)";
-        String decreaseStack = "addiu $sp, $sp, %i";
+        String decreaseStack = "addiu $sp, $sp, %d";
 
         appendInstruction(String.format(popValue,
                 reg)); //Store the value from the register into the address that the stack pointer points too
@@ -108,34 +108,34 @@ public class Program {
     }
 
     // Insert a function prologue at position pos
-    public void insertPrologue(int pos, int frameSize) {
+    public void insertPrologue(int localVarsSize) {
         ArrayList<String> prologue = new ArrayList<String>();
         prologue.add("subu $sp, $sp, 8");
         prologue.add("sw $fp, 0($sp)");
         prologue.add("sw $ra, 4($sp)");
         prologue.add("addi $fp, $sp, 8");
 
-        String allocateSpace = "subu $sp, $sp, %i";
+        String allocateSpace = "subu $sp, $sp, %d";
         prologue.add(String.format(allocateSpace,
-                frameSize)); //The size of the local variables that we want to allocate
+                localVarsSize)); //The size of the local variables that we want to allocate
 
-        codeSegment.addAll(pos, prologue);
+        codeSegment.addAll(prologue);
     }
 
     // Append a function epilogue
-    public void appendEpilogue(int position, int frameSize) {
+    public void appendEpilogue(int localVarsSize) {
         ArrayList<String> prologue = new ArrayList<String>();
 
-        String deallocateSpace = "addu $sp, $sp, %i";
+        String deallocateSpace = "addu $sp, $sp, %d";
         prologue.add(String.format(deallocateSpace,
-                frameSize)); //The size of the local variables that we want to deallocate
+                localVarsSize)); //The size of the local variables that we want to deallocate
 
         prologue.add("lw $ra, 4($sp)");
         prologue.add("lw $fp, 0($sp)");
         prologue.add("addu $sp, $sp, 8");
         prologue.add("jr $ra");
 
-        codeSegment.addAll(position, prologue);
+        codeSegment.addAll(prologue);
     }
 
     // Insert code that terminates the program

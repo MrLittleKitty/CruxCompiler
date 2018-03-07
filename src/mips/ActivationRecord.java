@@ -63,7 +63,7 @@ public class ActivationRecord {
         return parent;
     }
 
-    public int stackSize() {
+    public int getLocalsSize() {
         return stackSize;
     }
 
@@ -78,9 +78,9 @@ public class ActivationRecord {
 
     private void allocateLocalSpace(Program program, Symbol symbol) {
         int space = ActivationRecord.numBytes(symbol.type());
-        String instruction = "subu &sp, &sp, %i";
-        program.appendInstruction(String.format(instruction,
-                space)); //The amount of space we are allocating on the stack for this local variable
+//        String instruction = "subu &sp, &sp, %d";
+//        program.appendInstruction(String.format(instruction,
+//                space)); //The amount of space we are allocating on the stack for this local variable
         int offset = -12 - stackSize;
         locals.put(symbol, offset);
         stackSize += space;
