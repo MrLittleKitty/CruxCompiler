@@ -133,9 +133,8 @@ public class CodeGen implements ast.CommandVisitor {
             program.insertPrologue(currentFunction.getLocalsSize());
         }
 
-        for (Statement statement : node.body()) {
-            statement.accept(this);
-        }
+        //Handle all instructions for the function body
+        node.body().accept(this);
 
         //Put on the label for being able to jump to the end sequence
         if (isMain)
@@ -162,7 +161,23 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(Addition node) {
-        throw new RuntimeException("Implement this");
+        node.leftSide().accept(this);
+        node.rightSide().accept(this);
+
+        Type type = tc.getType(node);
+        if (type.equivalent(new IntType())) {
+            program.popInt("$t0"); //Right side into $t0
+            program.popInt("$t1"); //Left side into $t1
+            String instruction = "add $t2, $t0, $t1"; //Add the two together and store in $t2
+            program.appendInstruction(instruction);
+            program.pushInt("$t2"); //Push the addition result onto the stack
+        } else { //Addition of floats
+            program.popFloat("$f1"); //Right side into $f1
+            program.popFloat("$f2"); //Left side into $f2
+            String instruction = "add.s $f3, $f1, $f2"; //Add the two together and store in $f3
+            program.appendInstruction(instruction);
+            program.pushFloat("$f3"); //Push the addition result onto the stack
+        }
     }
 
     @Override
@@ -221,8 +236,12 @@ public class CodeGen implements ast.CommandVisitor {
         node.arguments().accept(this);
 
         String instruction = "jal %s"; //Jumps to the label of the func and stores the return address in the $ra register
-        instruction = String.format(instruction,
-                ("func." + node.function().name())); //Jump to the end of the function after pushing the value
+        if (node.function().name().equals("main"))
+            instruction = String.format(instruction,
+                    (node.function().name())); //We jump to the special label for the main function
+        else
+            instruction = String.format(instruction,
+                    ("func." + node.function().name())); //Jump to the label of the function that we are calling
         program.appendInstruction(instruction);
 
         //Caller tears down the call site
@@ -240,12 +259,12 @@ public class CodeGen implements ast.CommandVisitor {
             program.appendInstruction(instruction);
         }
 
-        //If there is a return value then push it into the function return register
+        //If there is a return value in the return register then we push it to the stack
         Type returnType = node.function().type();
         if (returnType.equivalent(new IntType()) || returnType.equivalent(new BoolType()))
-            program.popInt("$v0");
+            program.pushInt("$v0");
         else if (returnType.equivalent(new FloatType()))
-            program.popFloat("$v0");
+            program.pushFloat("$v0");
     }
 
     @Override
