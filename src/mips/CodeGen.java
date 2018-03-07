@@ -250,12 +250,59 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(IfElseBranch node) {
-        throw new RuntimeException("Implement this");
+//        String ifLabel = program.requestLabel(currentFunction.name()+".if");
+        String elseLabel = program.requestLabel(currentFunction.name() + ".else");
+        String endLabel = program.requestLabel(currentFunction.name() + ".ifelse.end");
+
+        //Visit the condition block and have its result pushed onto the stack. Then pop it into a temp register
+        node.condition().accept(this);
+        program.popInt("$t0");
+
+        //Jump past the if block if the condition register is equal to 0 (false)
+        String instruction = "beq $t0, $0, %s";
+        instruction = String.format(instruction,
+                elseLabel); //Jump to the else branch if the condition is false
+        program.appendInstruction(instruction);
+
+        //Handles all the instructions for the if block
+        node.thenBlock().accept(this);
+        instruction = "j %s";
+        instruction = String.format(instruction,
+                endLabel); //Jump to the end label after we finish the if block
+        program.appendInstruction(instruction);
+
+        //Start the else block
+        program.appendInstruction(elseLabel + ":");
+        node.elseBlock().accept(this);
+        program.appendInstruction(endLabel + ":");
     }
 
     @Override
     public void visit(WhileLoop node) {
-        throw new RuntimeException("Implement this");
+        String loopLabel = program.requestLabel(currentFunction.name() + ".while");
+        String endLabel = program.requestLabel(currentFunction.name() + ".while.end");
+
+        //Setup the label so that we can jump back to do the loop over again
+        program.appendInstruction(loopLabel + ":");
+        //Then accept the condition and have its result pushed onto the stack. Then pop it into a temp register
+        node.condition().accept(this);
+        program.popInt("$t0");
+
+        //Jump past the loop block if the condition register is equal to 0 (false)
+        String instruction = "beq $t0, $0, %s";
+        instruction = String.format(instruction,
+                endLabel); //Jump past the loop block if the condition is false
+        program.appendInstruction(instruction);
+
+        //Handle all the instructions of the while block
+        node.body().accept(this);
+        instruction = "j %s";
+        instruction = String.format(instruction,
+                loopLabel); //Jump to the loop label after we finish the loop so that it can run again (if needed)
+        program.appendInstruction(instruction);
+
+        //Add the end label so that if the loop condition is false we jump past all the loop block code
+        program.appendInstruction(endLabel + ":");
     }
 
     @Override
