@@ -108,7 +108,7 @@ public class Program {
     }
 
     // Insert a function prologue at position pos
-    public void insertPrologue(int localVarsSize) {
+    public void insertPrologue(int position, int localVarsSize) {
         ArrayList<String> prologue = new ArrayList<String>();
         prologue.add("subu $sp, $sp, 8");
         prologue.add("sw $fp, 0($sp)");
@@ -119,7 +119,7 @@ public class Program {
         prologue.add(String.format(allocateSpace,
                 localVarsSize)); //The size of the local variables that we want to allocate
 
-        codeSegment.addAll(prologue);
+        codeSegment.addAll(position, prologue);
     }
 
     // Append a function epilogue

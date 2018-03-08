@@ -115,26 +115,22 @@ public class CodeGen implements ast.CommandVisitor {
         ActivationRecord record = new ActivationRecord(node, currentFunction);
         currentFunction = record;
 
-        //Go through all the statements to gauge the size of local variable space we need to allocate
-        for (Statement statement : node.body()) {
-            if (statement instanceof VariableDeclaration)
-                currentFunction.add(program, (VariableDeclaration) statement);
-            else if (statement instanceof ArrayDeclaration)
-                currentFunction.add(program, (ArrayDeclaration) statement);
-        }
-
+        //We need the position of where we are placing the label so that we can come back and put in the prologue
+        int position;
         boolean isMain = node.function().name().equals("main");
-
         if (isMain)
-            program.appendInstruction("main:");
+            position = program.appendInstruction("main:");
         else {
             String label = "func." + node.function().name();
-            program.appendInstruction(label + ":");
-            program.insertPrologue(currentFunction.getLocalsSize());
+            position = program.appendInstruction(label + ":");
         }
 
         //Handle all instructions for the function body
         node.body().accept(this);
+
+        //Prologue actually need to be outside the ifelse otherwise main can't have local variables
+        //Now that the stack size has been calculated (by the StatementList visitor) we insert the prologue
+        program.insertPrologue(position + 1, currentFunction.getLocalsSize());
 
         //Put on the label for being able to jump to the end sequence
         if (isMain)
@@ -151,10 +147,11 @@ public class CodeGen implements ast.CommandVisitor {
         else if (returnType.equivalent(new FloatType()))
             program.popFloat("$v0");
 
+        //Append the prologue at the end of ALL functions (even main needs local variables sometimes)
+        program.appendEpilogue(currentFunction.getLocalsSize());
+
         if (isMain) //Append the exit sequence at the end of the main method
             program.appendExitSequence();
-        else //Append the prologue at the end of any non-main methods
-            program.appendEpilogue(currentFunction.getLocalsSize());
 
         currentFunction = record.parent();
     }
