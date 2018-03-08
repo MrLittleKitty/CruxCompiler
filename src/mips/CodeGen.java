@@ -367,7 +367,7 @@ public class CodeGen implements ast.CommandVisitor {
             String instruction = "sw $t1, 0($t0)"; //Store the int in $t1 into the address held at $t0
             program.appendInstruction(instruction);
         } else if (type.equivalent(new FloatType())) {
-            program.popInt("$f1"); //Pop the float value into $f1
+            program.popFloat("$f1"); //Pop the float value into $f1
             program.popInt("$t0"); //Pop the destination address into $t0
             String instruction = "swc1 $f1, 0($t0)"; //Store the float in $f1 into the address held at $t0
             program.appendInstruction(instruction);
