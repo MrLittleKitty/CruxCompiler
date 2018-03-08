@@ -62,7 +62,7 @@ public class Program {
     // Push an integer register on the stack
     public void pushInt(String reg) {
         String increaseStack = "subu $sp, $sp, %d";
-        String pushValue = "sw %s, ($sp)";
+        String pushValue = "sw %s, 0($sp)";
 
         appendInstruction(String.format(increaseStack,
                 ActivationRecord.numBytes(new IntType()))); //Increase the stack size by the number of bytes in an int
@@ -74,7 +74,7 @@ public class Program {
     // Push a single precision floating point register on the stack
     public void pushFloat(String reg) {
         String increaseStack = "subu $sp, $sp, %d";
-        String pushValue = "swc1 %s, ($sp)";
+        String pushValue = "swc1 %s, 0($sp)";
 
         appendInstruction(String.format(increaseStack,
                 ActivationRecord.numBytes(new FloatType()))); //Increase the stack size by the number of bytes in a float
@@ -85,7 +85,7 @@ public class Program {
 
     // Pop an integer from the stack into register reg
     public void popInt(String reg) {
-        String popValue = "lw %s, ($sp)";
+        String popValue = "lw %s, 0($sp)";
         String decreaseStack = "addi $sp, $sp, %d";
 
         appendInstruction(String.format(popValue,
@@ -97,7 +97,7 @@ public class Program {
 
     // Pop a floating point value from the stack into register reg
     public void popFloat(String reg) {
-        String popValue = "lwc1 %s, ($sp)";
+        String popValue = "lwc1 %s, 0($sp)";
         String decreaseStack = "addiu $sp, $sp, %d";
 
         appendInstruction(String.format(popValue,
