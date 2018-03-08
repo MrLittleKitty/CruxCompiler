@@ -280,8 +280,8 @@ public class CodeGen implements ast.CommandVisitor {
             //Push the $t2 register which will either have 1 or 0 (true or false) in it
             program.pushInt("$t2");
         } else if (type.equivalent(new FloatType())) {
-            program.popInt("$f2"); //Right side into $f2
-            program.popInt("$f1"); //Left side into $f1
+            program.popFloat("$f2"); //Right side into $f2
+            program.popFloat("$f1"); //Left side into $f1
 
             //All of the instructions will set the float flag with either 1 or 0
             String instruction = "%s $f1, $f2";
