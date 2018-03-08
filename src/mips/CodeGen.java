@@ -242,7 +242,11 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(LogicalNot node) {
-        throw new RuntimeException("Implement this");
+        node.expression().accept(this);
+        program.popInt("$t0"); //Pop the result of the expression into temp register
+        String instruction = "nor $t1, $t0, $0"; //Not the register and store it into $t1
+        program.appendInstruction(instruction);
+        program.pushInt("$t1"); //Push the result of the not operation onto the stack
     }
 
     @Override
