@@ -169,29 +169,21 @@ public class CodeGen implements ast.CommandVisitor {
 
     private void handleArithmetic(Type type, String operation) {
         if (type.equivalent(new IntType())) {
-            popLeftRightInts();
+            program.popInt("$t0"); //Right side into $t0
+            program.popInt("$t1"); //Left side into $t1
             String instruction = "%s $t2, $t1, $t0";
             instruction = String.format(instruction, operation);
             program.appendInstruction(instruction);
             program.pushInt("$t2");
         } else {
             String floatOp = operation + ".s";
-            popLeftRightFloats();
+            program.popFloat("$f1"); //Right side into $f1
+            program.popFloat("$f2"); //Left side into $f2
             String instruction = "%s $f3, $f2, $f1";
             instruction = String.format(instruction, floatOp);
             program.appendInstruction(instruction);
             program.pushFloat("$f3");
         }
-    }
-
-    private void popLeftRightInts() {
-        program.popInt("$t0"); //Right side into $t0
-        program.popInt("$t1"); //Left side into $t1
-    }
-
-    private void popLeftRightFloats() {
-        program.popFloat("$f1"); //Right side into $f1
-        program.popFloat("$f2"); //Left side into $f2
     }
 
     @Override
@@ -259,7 +251,74 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(Comparison node) {
-        throw new RuntimeException("Implement this");
+        node.leftSide().accept(this); //Pushes either int or float onto the stack
+        node.rightSide().accept(this); //Pushes either int or float onto the stack
+
+        Type type = tc.getType((Command) node.leftSide());
+        if (type.equivalent(new IntType())) {
+            program.popInt("$t1"); //Right side into $t1
+            program.popInt("$t0"); //Left side into $t0
+
+            //All of the comparisons will put either 1 or 0 into the $t2 register
+            String instruction = "%s $t2, $t0, $t1";
+            String value = "";
+            if (node.operation() == Comparison.Operation.EQ)
+                value = "seq";
+            else if (node.operation() == Comparison.Operation.NE)
+                value = "sne";
+            else if (node.operation() == Comparison.Operation.LT)
+                value = "slt";
+            else if (node.operation() == Comparison.Operation.LE)
+                value = "sle";
+            else if (node.operation() == Comparison.Operation.GT)
+                value = "sgt";
+            else if (node.operation() == Comparison.Operation.GE)
+                value = "sge";
+
+            instruction = String.format(instruction, value); //Format it with the correct operator
+            program.appendInstruction(instruction);
+            //Push the $t2 register which will either have 1 or 0 (true or false) in it
+            program.pushInt("$t2");
+        } else if (type.equivalent(new FloatType())) {
+            program.popInt("$f2"); //Right side into $f2
+            program.popInt("$f1"); //Left side into $f1
+
+            //All of the instructions will set the float flag with either 1 or 0
+            String instruction = "%s $f1, $f2";
+            String value = "";
+            if (node.operation() == Comparison.Operation.EQ)
+                value = "c.eq.s";
+            else if (node.operation() == Comparison.Operation.NE)
+                value = "c.ne.s";
+            else if (node.operation() == Comparison.Operation.LT)
+                value = "c.lt.s";
+            else if (node.operation() == Comparison.Operation.LE)
+                value = "c.le.s";
+            else if (node.operation() == Comparison.Operation.GT)
+                value = "c.gt.s";
+            else if (node.operation() == Comparison.Operation.GE)
+                value = "c.ge.s";
+
+            instruction = String.format(instruction, value); //Format it with the correct operator
+            program.appendInstruction(instruction);
+
+            String trueLabel = program.requestLabel(currentFunction.name() + ".comp.true");
+            String endLabel = program.requestLabel(currentFunction.name() + ".comp.end");
+
+            instruction = "bc1t %s"; //We are going to jump to the true label if the float flag has true in it
+            instruction = String.format(instruction, trueLabel);
+            program.appendInstruction(instruction);
+            //If the jump above doesnt happen then we are going to fall down to where we push false onto the stack
+            program.pushInt("$0"); //Push false onto the stack
+            instruction = "j %s"; //Jump to the end label so we don't also push true onto the stack
+            instruction = String.format(instruction, endLabel);
+            program.appendInstruction(instruction);
+            //Here we will push true onto the stack because we will get jumped to when the comparison evaluated to true
+            program.appendInstruction(trueLabel + ":");
+            program.appendInstruction("li $t5, 1");
+            program.pushInt("$t5");
+            program.appendInstruction(endLabel + ":");
+        }
     }
 
     @Override
