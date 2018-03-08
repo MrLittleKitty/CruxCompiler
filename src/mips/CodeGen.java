@@ -62,8 +62,19 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(StatementList node) {
-        for (Statement statement : node)
+        for (Statement statement : node) {
             statement.accept(this);
+
+            //If the statement returns a value then we need to remove it from the stack because
+            //  "Statements don't change the size of the stack"
+            if (statement instanceof Call) {
+                Type type = tc.getType((Command) statement);
+                if (type.equivalent(new IntType()) || type.equivalent(new BoolType()))
+                    program.popInt("$t0"); //Pop int for int type and bool type (1 or 0)
+                else if (type.equivalent(new FloatType()))
+                    program.popFloat("$f1"); //Pop float for float type
+            }
+        }
     }
 
     @Override

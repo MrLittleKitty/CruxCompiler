@@ -126,7 +126,7 @@ class GlobalFrame extends ActivationRecord {
     }
 
     private String reserveSpace(Symbol symbol, int space) {
-        String instruction = "%s: .space &i";
+        String instruction = "%s: .space %d";
         return String.format(instruction,
                 getUniqueGlobalLabel(symbol.name()),
                 space);
