@@ -261,7 +261,19 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(Index node) {
-        throw new RuntimeException("Implement this");
+        node.base().accept(this); //This should push an address onto the stack
+        node.amount().accept(this); //This should push an int (index) onto the stack
+
+        program.popInt("$t0"); //Pop the index into $t0
+        program.popInt("$t1"); //Pop the address into $t1
+        //Hard coding 4 bytes because thats the size of all datatypes in our language right now
+        String instruction = "li $t2, 4"; //We need to multiply the index by the num of bytes to get the offset
+        program.appendInstruction(instruction);
+        instruction = "mul $t3, $t2, $t0"; //Multiply together and store the new offset into $t3
+        program.appendInstruction(instruction);
+        instruction = "add $t4, $t3, $t1"; //Add the offset to the given address and store into $t4
+        program.appendInstruction(instruction);
+        program.pushInt("$t4"); //Push the new address (base + offset) onto the stack
     }
 
     @Override
