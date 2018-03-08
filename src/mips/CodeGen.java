@@ -152,7 +152,7 @@ public class CodeGen implements ast.CommandVisitor {
         }
 
         //We have to pop the return value into the return value register ($v0)
-        Type returnType = node.function().type();
+        Type returnType = ((FuncType)node.function().type()).returnType();
         if (returnType.equivalent(new BoolType()) || returnType.equivalent(new IntType()))
             program.popInt("$v0");
         else if (returnType.equivalent(new FloatType()))
@@ -404,7 +404,7 @@ public class CodeGen implements ast.CommandVisitor {
         }
 
         //If there is a return value in the return register then we push it to the stack
-        Type returnType = node.function().type();
+        Type returnType = ((FuncType) node.function().type()).returnType();
         if (returnType.equivalent(new IntType()) || returnType.equivalent(new BoolType()))
             program.pushInt("$v0");
         else if (returnType.equivalent(new FloatType()))
