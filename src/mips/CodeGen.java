@@ -256,7 +256,19 @@ public class CodeGen implements ast.CommandVisitor {
 
     @Override
     public void visit(Dereference node) {
-        throw new RuntimeException("Implement this");
+        node.expression().accept(this); //This should push an address onto the stack
+        program.popInt("$t0"); //Pop the address into temp register
+
+        Type type = tc.getType(node);
+        if (type.equivalent(new IntType()) || type.equivalent(new BoolType())) {
+            String instruction = "lw $t1, 0($t0)"; //Load the value from the address into $t1
+            program.appendInstruction(instruction);
+            program.pushInt("$t1"); //Push the value we loaded onto the stack
+        } else if (type.equivalent(new FloatType())) {
+            String instruction = "lwc1 $f1, 0($t0)"; //Load the value from the address into $f1
+            program.appendInstruction(instruction);
+            program.pushFloat("$f1"); //Push the value we loaded onto the stack
+        }
     }
 
     @Override
