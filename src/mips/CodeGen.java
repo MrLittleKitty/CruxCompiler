@@ -152,7 +152,7 @@ public class CodeGen implements ast.CommandVisitor {
         }
 
         //We have to pop the return value into the return value register ($v0)
-        Type returnType = ((FuncType)node.function().type()).returnType();
+        Type returnType = ((FuncType) node.function().type()).returnType();
         if (returnType.equivalent(new BoolType()) || returnType.equivalent(new IntType()))
             program.popInt("$v0");
         else if (returnType.equivalent(new FloatType()))
@@ -345,8 +345,14 @@ public class CodeGen implements ast.CommandVisitor {
 
         program.popInt("$t0"); //Pop the index into $t0
         program.popInt("$t1"); //Pop the address into $t1
-        //Hard coding 4 bytes because thats the size of all datatypes in our language right now
-        String instruction = "li $t2, 4"; //We need to multiply the index by the num of bytes to get the offset
+
+        Type type = tc.getType(node);
+        if (type instanceof AddressType) {
+            type = ((AddressType) type).base();
+        }
+        String instruction = "li $t2, %s"; //We need to multiply the index by the num of bytes to get the offset
+        instruction = String.format(instruction,
+                ActivationRecord.numBytes(type)); //The number of bytes in this type
         program.appendInstruction(instruction);
         instruction = "mul $t3, $t2, $t0"; //Multiply together and store the new offset into $t3
         program.appendInstruction(instruction);
